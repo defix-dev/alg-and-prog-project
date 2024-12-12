@@ -1,0 +1,8 @@
+[
+{
+  "directory": "C:/Users/defix/Documents/GitHub/alg-and-prog-project/AppModule/build",
+  "command": "C:/msys64/mingw64/bin/g++.exe  @CMakeFiles/MyCppProject.dir/includes_CXX.rsp -g -std=gnu++1z -o CMakeFiles/MyCppProject.dir/src/main.cpp.obj -c C:/Users/defix/Documents/GitHub/alg-and-prog-project/AppModule/src/main.cpp",
+  "file": "C:/Users/defix/Documents/GitHub/alg-and-prog-project/AppModule/src/main.cpp",
+  "output": "CMakeFiles/MyCppProject.dir/src/main.cpp.obj"
+}
+]
