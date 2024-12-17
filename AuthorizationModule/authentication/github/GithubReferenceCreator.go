@@ -8,3 +8,11 @@ const (
 func CreateStageOneRef(token string) string {
 	return "https://github.com/login/oauth/authorize?client_id=" + CLIENT_ID + "&state=" + token + "&scope=user:email"
 }
+
+func CreateStageTwoRef() string {
+	return "https://github.com/login/oauth/access_token"
+}
+
+func CreateUserInfoRef() string {
+	return "https://api.github.com/user"
+}

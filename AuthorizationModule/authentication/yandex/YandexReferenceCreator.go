@@ -8,3 +8,11 @@ const (
 func CreateStageOneRef(token string) string {
 	return "https://oauth.yandex.ru/authorize?response_type=code&client_id=" + CLIENT_ID + "&state=" + token
 }
+
+func CreateStageTwoRef() string {
+	return "https://oauth.yandex.ru/token"
+}
+
+func CreateUserInfoRef() string {
+	return "https://login.yandex.ru/info?format=json"
+}

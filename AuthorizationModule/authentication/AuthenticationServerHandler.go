@@ -3,24 +3,39 @@ package authentication
 import (
 	"authorization-module/authentication/github"
 	"authorization-module/authentication/yandex"
+	"fmt"
 	"net/http"
 )
 
-type AuthenticationServerHandler struct {
-	server *AuthenticationServer
-}
+const (
+	GITHUB_AUTH_TYPE = "github"
+	YANDEX_AUTH_TYPE = "yandex"
+	CODE_AUTH_TYPE   = "code"
+	TEMP_LOGIN_TOKEN = "token"
+)
 
-func ContructAuthenticationServerHandler(server *AuthenticationServer) *AuthenticationServerHandler {
-	return &AuthenticationServerHandler{server: server}
-}
-
-func (handler *AuthenticationServerHandler) startHandle() {
+func StartHandle() {
 	http.HandleFunc("/login", handleLoginPath)
 	http.HandleFunc("/callback", handleCallbackPath)
+	http.HandleFunc("/authorize", handleAuthorize)
 }
 
-func getCookieHandler(response http.ResponseWriter, request *http.Request) {
+func handleLoginPath(response http.ResponseWriter, request *http.Request) {
+	query := request.URL.Query()
 
+	authType := query.Get("type")
+	token, _ := request.Cookie(TEMP_LOGIN_TOKEN)
+
+	http.SetCookie(response, &http.Cookie{
+		Name:  TEMP_LOGIN_TOKEN,
+		Value: token.Value,
+	})
+
+	if authType == YANDEX_AUTH_TYPE {
+		http.Redirect(response, request, yandex.CreateStageOneRef(token.Value), http.StatusFound)
+	} else {
+		http.Redirect(response, request, github.CreateStageOneRef(token.Value), http.StatusFound)
+	}
 }
 
 func handleCallbackPath(response http.ResponseWriter, request *http.Request) {
@@ -28,8 +43,8 @@ func handleCallbackPath(response http.ResponseWriter, request *http.Request) {
 
 	code := query.Get("code")
 	stateToCheck := query.Get("state")
-
-	state, err := request.Cookie("state")
+	authType := query.Get("auth_type")
+	state, err := request.Cookie(TEMP_LOGIN_TOKEN)
 
 	if err != nil {
 		return
@@ -39,38 +54,25 @@ func handleCallbackPath(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	http.SetCookie(response, &http.Cookie{
-		Name:   "code",
-		Value:  code,
-		MaxAge: 3600,
-	})
+	var oauthkey string
+	if authType == YANDEX_AUTH_TYPE {
+		oauthkey = yandex.GetAccessToken(code)
+	} else {
+		oauthkey = github.GetAccessToken(code, stateToCheck)
+	}
+
+	http.Redirect(response, request, "http://localhost:3031/authorize?access_token="+oauthkey+"&auth_type="+authType, http.StatusFound)
 }
 
-func handleLoginPath(response http.ResponseWriter, request *http.Request) {
+func handleAuthorize(response http.ResponseWriter, request *http.Request) {
 	query := request.URL.Query()
 
-	authType := query.Get("type")
-	token := query.Get("token")
-
-	http.SetCookie(response, &http.Cookie{
-		Name:   "state",
-		Value:  token,
-		MaxAge: 3600,
-	})
-
-	response.WriteHeader(http.StatusFound)
+	accessToken := query.Get("access_token")
+	authType := query.Get("auth_type")
 
 	if authType == "yandex" {
-		handleByYandexPattern(&response, token)
+		fmt.Println(yandex.ChangeCodeToUserInfo(accessToken))
 	} else {
-		handleByGithubPattern(&response, token)
+		fmt.Println(github.ChangeCodeToUserInfo(accessToken))
 	}
-}
-
-func handleByYandexPattern(response *http.ResponseWriter, token string) {
-	(*response).Header().Add("Location", yandex.CreateStageOneRef(token))
-}
-
-func handleByGithubPattern(response *http.ResponseWriter, token string) {
-	(*response).Header().Add("Location", github.CreateStageOneRef(token))
 }

@@ -1,17 +1,13 @@
 package main
 
-import (
-	mongodb "authorization-module/database"
-	"context"
-	"fmt"
-	"log"
-
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
-	"go.mongodb.org/mongo-driver/mongo/readpref"
-)
+import "authorization-module/authentication"
 
 func main() {
+
+	authentication.StartHandle()
+	authentication.StartServer()
+
+	/* MONGO TEST
 	// Устанавливаем контекст
 	ctx := context.Background()
 
@@ -38,5 +34,5 @@ func main() {
 	modificator := mongodb.ConstructUserModificator(db)
 
 	//creator.CreateByEmail("testmail@test.com")
-	modificator.ModifyNameByEmail("poncick", "testmail@test.com")
+	modificator.ModifyNameByEmail("poncick", "testmail@test.com") */
 }
