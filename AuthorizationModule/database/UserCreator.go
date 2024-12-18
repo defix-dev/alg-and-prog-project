@@ -12,9 +12,9 @@ type UserCreator struct {
 	context    context.Context
 }
 
-func ConstructUserCreator(db *mongo.Database) *UserCreator {
+func ConstructUserCreator() *UserCreator {
 	return &UserCreator{
-		collection: db.Collection(USERS_COLLECTION),
+		collection: database.Collection(USERS_COLLECTION),
 		context:    context.Background(),
 	}
 }

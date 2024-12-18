@@ -8,13 +8,13 @@ import (
 )
 
 type UserFinder struct {
-	collection mongo.Collection
+	collection *mongo.Collection
 	context    context.Context
 }
 
-func ConstructUserFinder(db *mongo.Database) *UserFinder {
+func ConstructUserFinder() *UserFinder {
 	return &UserFinder{
-		collection: *db.Collection(USERS_COLLECTION),
+		collection: database.Collection(USERS_COLLECTION),
 		context:    context.Background(),
 	}
 }

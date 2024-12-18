@@ -12,9 +12,9 @@ type UserModificator struct {
 	context    context.Context
 }
 
-func ConstructUserModificator(db *mongo.Database) *UserModificator {
+func ConstructUserModificator() *UserModificator {
 	return &UserModificator{
-		collection: db.Collection(USERS_COLLECTION),
+		collection: database.Collection(USERS_COLLECTION),
 		context:    context.Background(),
 	}
 }

@@ -50,8 +50,7 @@ public class AuthorizationController {
         saver.saveToken(token); // Асинхронная операция
         HttpClient client = HttpClient.newBuilder().build();
         HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create("http://localhost:3031/login?type=" + authType))
-                .header("Cookie", "token=" + token)
+                .uri(URI.create("http://localhost:3031/login?type=" + authType + "&token="+token))
                 .POST(HttpRequest.BodyPublishers.noBody())
                 .build();
         HttpResponse<String> response;
@@ -62,7 +61,6 @@ public class AuthorizationController {
         }
         return ResponseEntity.status(HttpStatus.FOUND)
                 .header("Location", response.headers().firstValue("Location").orElse("http://localhost:3030/"))
-                .header("Set-Cookie", response.headers().firstValue("Set-Cookie").orElse(""))
                 .build();
     }
 }
