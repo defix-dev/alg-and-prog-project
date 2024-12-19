@@ -19,16 +19,21 @@ func ConstructUserModificator() *UserModificator {
 	}
 }
 
+func (modificator *UserModificator) ModifyTokensByEmail(details TokenDetails, email string) error {
+	_, err := modificator.collection.UpdateOne(modificator.context, bson.M{"_email": email}, bson.M{
+		"$set": bson.M{
+			"tokens": details,
+		},
+	})
+	return err
+}
+
 func (modificator *UserModificator) ModifyNameByEmail(value string, email string) error {
 	return modificator.modifyKeyByEmail("name", value, email)
 }
 
 func (modificator *UserModificator) ModifyRoleByEmail(value string, email string) error {
 	return modificator.modifyKeyByEmail("role", value, email)
-}
-
-func (modificator *UserModificator) ModifyTokensByEmail(value bson.A, email string) error {
-	return modificator.modifyKeyByEmail("tokens", value, email)
 }
 
 func (modificator *UserModificator) ModifyPhoneNumberByEmail(value string, email string) error {

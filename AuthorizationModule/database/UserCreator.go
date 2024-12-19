@@ -25,7 +25,10 @@ func (creator *UserCreator) CreateByEmail(email string) error {
 		"name":        DEFAULT_NAME,
 		"phoneNumber": DEFAULT_PHONE_NUMBER,
 		"role":        DEFAULT_ROLE,
-		"tokens":      bson.A{},
+		"tokens": TokenDetails{
+			RefreshToken: "",
+			AuthToken:    "",
+		},
 	})
 	return err
 }

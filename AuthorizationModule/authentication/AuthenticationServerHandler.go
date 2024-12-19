@@ -2,10 +2,11 @@ package authentication
 
 import (
 	"authorization-module/authentication/github"
+	jwt_token "authorization-module/authentication/jwt"
 	"authorization-module/authentication/yandex"
 	mongodb "authorization-module/database"
+	"bytes"
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
 	"strconv"
@@ -87,7 +88,6 @@ func handleAuthorize(response http.ResponseWriter, request *http.Request) {
 	accessToken := query.Get("access_token")
 	authType := query.Get("auth_type")
 
-	// Проверка на nil для значений
 	if accessToken == "" || authType == "" {
 		http.Error(response, "Invalid request", http.StatusBadRequest)
 		return
@@ -135,7 +135,31 @@ func handleAuthorize(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	fmt.Println("Current Permissions: ")
-	fmt.Println(permissions)
+	accessToken, err = jwt_token.GenerateAccessToken(permissions)
+	if err != nil {
+		http.Error(response, "Failed to generate access token: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	refreshToken, err := jwt_token.GenerateRefreshToken(user.Email)
+	if err != nil {
+		http.Error(response, "Failed to generate refresh token", http.StatusInternalServerError)
+		return
+	}
+
+	err = mongodb.ConstructUserModificator().ModifyTokensByEmail(mongodb.TokenDetails{
+		RefreshToken: refreshToken,
+		AuthToken:    "",
+	}, user.Email)
+	if err != nil {
+		http.Error(response, "Failed to modify user data", http.StatusInternalServerError)
+		return
+	}
+
+	_, err = http.Post("http://localhost:3030?access_token="+accessToken+"&refresh_token="+refreshToken, "application/x-www-form-urlencoded", bytes.NewBuffer([]byte{}))
+	if err != nil {
+		http.Error(response, "Failed to send post request", http.StatusInternalServerError)
+		return
+	}
 	http.Redirect(response, request, "http://localhost:3030/", http.StatusFound)
 }
