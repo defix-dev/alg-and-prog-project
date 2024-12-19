@@ -2,22 +2,18 @@ package com.sigma_squad.web.services.token;
 
 import com.sigma_squad.web.services.token.exceptions.JSESSIONIDDoNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.Arrays;
 
 @Service
 public class CookieAdapter {
-    private final HttpServletRequest request;
+    private final HttpSession session;
 
-    public CookieAdapter(HttpServletRequest request) {
-        this.request = request;
-    }
-
-    public String getSessionId() throws JSESSIONIDDoNotFoundException {
-        return Arrays
-                .stream(request.getCookies())
-                .filter(cookie -> cookie.getName().equals("JSESSIONID"))
-                .findFirst().orElseThrow(JSESSIONIDDoNotFoundException::new).getValue();
+    @Autowired
+    public CookieAdapter(HttpSession session) {
+        this.session = session;
     }
 }

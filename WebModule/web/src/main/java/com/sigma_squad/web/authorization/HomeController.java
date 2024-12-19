@@ -1,5 +1,7 @@
 package com.sigma_squad.web.authorization;
 
+import com.sigma_squad.web.services.token.TokenSaver;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
@@ -11,6 +13,13 @@ import org.springframework.web.bind.annotation.RequestParam;
 @Controller
 @RequestMapping("/")
 public class HomeController {
+    private final TokenSaver saver;
+
+    @Autowired
+    public HomeController(TokenSaver saver) {
+        this.saver = saver;
+    }
+
     @GetMapping
     public String home() {
         return "home";
@@ -21,6 +30,7 @@ public class HomeController {
                                      @RequestParam(value = "refresh_token",required = true) String refreshToken) {
         System.out.println(accessToken);
         System.out.println(refreshToken);
+        saver.saveJWTTokens(accessToken, refreshToken);
         return ResponseEntity.ok().build();
     }
 }

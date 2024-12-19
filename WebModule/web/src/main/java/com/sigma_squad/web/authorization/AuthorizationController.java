@@ -5,6 +5,7 @@ import com.sigma_squad.web.services.token.TokenGenerator;
 import com.sigma_squad.web.services.token.TokenSaver;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
+import lombok.Getter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -26,6 +27,18 @@ public class AuthorizationController {
     private final TokenSaver saver;
     private final TokenAdapter tokenAdapter;
 
+    @Getter
+    public enum AuthStatus {
+        AUTHORIZED("Authorized"),
+        ANONYMOUS("Anonymous");
+
+       private final String statusName;
+
+       AuthStatus(String statusName) {
+           this.statusName = statusName;
+       }
+    }
+
     @Autowired
     public AuthorizationController(TokenSaver saver, TokenAdapter tokenAdapter) {
         this.saver = saver;
@@ -33,21 +46,23 @@ public class AuthorizationController {
     }
 
     @GetMapping
-    public String loginWithoutParams(HttpSession session) {
-        session.getId();
+    public String loginWithoutParams() {
         return "login";
     }
 
     @PostMapping
-    public ResponseEntity<Void> loginWithParams(@RequestParam("type") String authType) {
+    public ResponseEntity<Void> loginWithParams(@RequestParam("type") String authType, HttpServletRequest req) {
+        HttpSession session = req.getSession(false);
+        if(session != null) {
+            session.invalidate();
+        }
+        session = req.getSession(true);
 
-        // Извлечение параметров в основном потоке
         String token = tokenAdapter.isExistTokenBody()
-                ? tokenAdapter.getTokenBody().getToken()
+                ? tokenAdapter.getTokenBody().getAuthToken()
                 : TokenGenerator.generateSecureToken();
 
-        // Асинхронное выполнение кода
-        saver.saveToken(token); // Асинхронная операция
+        saver.saveAuthToken(token);
         HttpClient client = HttpClient.newBuilder().build();
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create("http://localhost:3031/login?type=" + authType + "&token="+token))

@@ -7,7 +7,6 @@ import (
 	mongodb "authorization-module/database"
 	"bytes"
 	"encoding/json"
-	"log"
 	"net/http"
 	"strconv"
 	"time"
@@ -39,6 +38,23 @@ func StartHandle() {
 	http.HandleFunc("/login", handleLoginPath)
 	http.HandleFunc("/callback", handleCallbackPath)
 	http.HandleFunc("/authorize", handleAuthorize)
+	http.HandleFunc("/login_end_stage", handleLoginEndStagePath)
+}
+
+func handleLoginEndStagePath(response http.ResponseWriter, request *http.Request) {
+	query := request.URL.Query()
+	status := query.Get("status")
+	code := query.Get("code")
+
+	response.Header().Add("Content-Type", "text/html")
+
+	if status == "success" {
+		response.Write([]byte("<!DOCTYPE html><html lang='en'><head><meta charset='UTF-8'><title>Success Page</title></head><body><h1>Успешно</h1><a href='http://localhost:3030/'>Вернуться на сайт</a></body></html>"))
+	} else if code != "" {
+		response.Write([]byte("<!DOCTYPE html><html lang='en'><head><meta charset='UTF-8'><title>Failed Page</title></head><body><h1>Во время авторизации возникла ошибка: " + code + "</h1><a href='http://localhost:3030/'>Вернуться на сайт</a></body></html>"))
+	} else {
+		response.Write([]byte("<!DOCTYPE html><html lang='en'><head><meta charset='UTF-8'><title>Failed Page</title></head><body><h1>Во время авторизации возникла ошибка</h1><a href='http://localhost:3030/'>Вернуться на сайт</a></body></html>"))
+	}
 }
 
 func handleLoginPath(response http.ResponseWriter, request *http.Request) {
@@ -65,7 +81,7 @@ func handleCallbackPath(response http.ResponseWriter, request *http.Request) {
 	_, exists := tokens[state]
 
 	if query.Has("error") || !exists {
-		http.Redirect(response, request, "http://localhost:3030/login?error="+strconv.Itoa(http.StatusForbidden), http.StatusFound)
+		sendErrorWithStatusCode(response, request, http.StatusInternalServerError)
 		return
 	}
 
@@ -89,7 +105,7 @@ func handleAuthorize(response http.ResponseWriter, request *http.Request) {
 	authType := query.Get("auth_type")
 
 	if accessToken == "" || authType == "" {
-		http.Error(response, "Invalid request", http.StatusBadRequest)
+		sendErrorWithStatusCode(response, request, http.StatusBadRequest)
 		return
 	}
 
@@ -101,14 +117,13 @@ func handleAuthorize(response http.ResponseWriter, request *http.Request) {
 	}
 
 	if jsonBody == "" {
-		http.Error(response, "Failed to retrieve user info", http.StatusInternalServerError)
+		sendErrorWithStatusCode(response, request, http.StatusInternalServerError)
 		return
 	}
 
 	var requiredData YandexUserDataRequired
 	if err := json.Unmarshal([]byte(jsonBody), &requiredData); err != nil {
-		log.Println("Error unmarshalling data:", err)
-		http.Error(response, "Failed to parse user data", http.StatusInternalServerError)
+		sendErrorWithStatusCode(response, request, http.StatusInternalServerError)
 		return
 	}
 
@@ -125,25 +140,25 @@ func handleAuthorize(response http.ResponseWriter, request *http.Request) {
 	}
 
 	if user == nil {
-		http.Error(response, "User not found", http.StatusNotFound)
+		sendErrorWithStatusCode(response, request, http.StatusInternalServerError)
 		return
 	}
 
 	permissions, err := mongodb.GeneratePermissions(user.Role)
 	if err != nil {
-		http.Error(response, "Failed to generate permissions", http.StatusInternalServerError)
+		sendErrorWithStatusCode(response, request, http.StatusInternalServerError)
 		return
 	}
 
 	accessToken, err = jwt_token.GenerateAccessToken(permissions)
 	if err != nil {
-		http.Error(response, "Failed to generate access token: "+err.Error(), http.StatusInternalServerError)
+		sendErrorWithStatusCode(response, request, http.StatusInternalServerError)
 		return
 	}
 
 	refreshToken, err := jwt_token.GenerateRefreshToken(user.Email)
 	if err != nil {
-		http.Error(response, "Failed to generate refresh token", http.StatusInternalServerError)
+		sendErrorWithStatusCode(response, request, http.StatusInternalServerError)
 		return
 	}
 
@@ -152,14 +167,22 @@ func handleAuthorize(response http.ResponseWriter, request *http.Request) {
 		AuthToken:    "",
 	}, user.Email)
 	if err != nil {
-		http.Error(response, "Failed to modify user data", http.StatusInternalServerError)
+		sendErrorWithStatusCode(response, request, http.StatusInternalServerError)
 		return
 	}
 
 	_, err = http.Post("http://localhost:3030?access_token="+accessToken+"&refresh_token="+refreshToken, "application/x-www-form-urlencoded", bytes.NewBuffer([]byte{}))
 	if err != nil {
-		http.Error(response, "Failed to send post request", http.StatusInternalServerError)
+		sendErrorWithStatusCode(response, request, http.StatusInternalServerError)
 		return
 	}
-	http.Redirect(response, request, "http://localhost:3030/", http.StatusFound)
+	http.Redirect(response, request, "http://localhost:3031/login_end_stage?status=success", http.StatusFound)
+}
+
+func sendErrorWithStatusCode(response http.ResponseWriter, request *http.Request, statusCode int) {
+	http.Redirect(response, request, "http://localhost:3031/login_end_stage?status=failed&code="+strconv.Itoa(statusCode), http.StatusFound)
+}
+
+func sendError(response http.ResponseWriter, request *http.Request) {
+	http.Redirect(response, request, "http://localhost:3031/login_end_stage?status=failed", http.StatusFound)
 }
