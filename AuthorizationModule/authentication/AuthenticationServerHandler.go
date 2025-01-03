@@ -1,44 +1,60 @@
 package authentication
 
 import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"time"
+
+	"authorization-module/authentication/common"
 	"authorization-module/authentication/github"
 	jwt_token "authorization-module/authentication/jwt"
 	"authorization-module/authentication/yandex"
+	"authorization-module/config"
 	mongodb "authorization-module/database"
-	"bytes"
-	"encoding/json"
-	"net/http"
-	"strconv"
-	"time"
 )
 
 type AuthTokenData struct {
 	ExpiresAt      time.Time
 	ResponseStatus int
+	AccessToken    string
+	RefreshToken   string
 }
 
-type YandexUserDataRequired struct {
-	Email string `json:"default_email"`
-}
-
-type GithubUserDataRequired struct {
-	Email string `json:"email"`
-}
-
-var tokens map[string]AuthTokenData = make(map[string]AuthTokenData)
+var tokens = make(map[string]AuthTokenData)
 
 const (
 	GITHUB_AUTH_TYPE = "github"
 	YANDEX_AUTH_TYPE = "yandex"
 	CODE_AUTH_TYPE   = "code"
-	TEMP_LOGIN_TOKEN = "token"
 )
 
 func StartHandle() {
 	http.HandleFunc("/login", handleLoginPath)
-	http.HandleFunc("/callback", handleCallbackPath)
-	http.HandleFunc("/authorize", handleAuthorize)
+	http.HandleFunc("/callback", handleCallbackPathAuth)
+	http.HandleFunc("/authorize", handleAuthorizeAuth)
 	http.HandleFunc("/login_end_stage", handleLoginEndStagePath)
+	http.HandleFunc("/get", handleGetPath)
+}
+
+func handleGetPath(response http.ResponseWriter, request *http.Request) {
+	state := request.URL.Query().Get("state")
+	tokensData, exists := tokens[state]
+
+	if !exists {
+		sendErrorWithStatusCode(response, request, http.StatusInternalServerError)
+		return
+	}
+
+	jsonData, err := json.Marshal(tokensData)
+	if err != nil {
+		sendErrorWithStatusCode(response, request, http.StatusInternalServerError)
+		return
+	}
+
+	response.Header().Add("Content-Type", "application/json")
+	response.Write(jsonData)
 }
 
 func handleLoginEndStagePath(response http.ResponseWriter, request *http.Request) {
@@ -46,41 +62,49 @@ func handleLoginEndStagePath(response http.ResponseWriter, request *http.Request
 	status := query.Get("status")
 	code := query.Get("code")
 
+	session, err := request.Cookie("JSESSIONID")
+	if err != nil {
+		sendErrorWithStatusCode(response, request, http.StatusInternalServerError)
+		return
+	}
+
 	response.Header().Add("Content-Type", "text/html")
+	response.Header().Add("Cookie", "JSESSIONID="+session.Value)
 
 	if status == "success" {
-		response.Write([]byte("<!DOCTYPE html><html lang='en'><head><meta charset='UTF-8'><title>Success Page</title></head><body><h1>Успешно</h1><a href='http://localhost:3030/'>Вернуться на сайт</a></body></html>"))
-	} else if code != "" {
-		response.Write([]byte("<!DOCTYPE html><html lang='en'><head><meta charset='UTF-8'><title>Failed Page</title></head><body><h1>Во время авторизации возникла ошибка: " + code + "</h1><a href='http://localhost:3030/'>Вернуться на сайт</a></body></html>"))
+		response.Write([]byte("<h1>Успешно</h1><a href='http://localhost:3030/'>Вернуться на сайт</a>"))
 	} else {
-		response.Write([]byte("<!DOCTYPE html><html lang='en'><head><meta charset='UTF-8'><title>Failed Page</title></head><body><h1>Во время авторизации возникла ошибка</h1><a href='http://localhost:3030/'>Вернуться на сайт</a></body></html>"))
+		errorMsg := "Во время авторизации возникла ошибка"
+		if code != "" {
+			errorMsg += ": " + code
+		}
+		response.Write([]byte("<h1>" + errorMsg + "</h1><a href='http://localhost:3030/'>Вернуться на сайт</a>"))
 	}
 }
 
 func handleLoginPath(response http.ResponseWriter, request *http.Request) {
 	query := request.URL.Query()
 	authType := query.Get("type")
-	token := query.Get(TEMP_LOGIN_TOKEN)
+	token := query.Get("token")
 
 	tokens[token] = AuthTokenData{
 		ExpiresAt:      time.Now().Add(5 * time.Minute),
 		ResponseStatus: http.StatusNotModified,
 	}
 
+	redirectURL := github.CreateStageOneRef(token)
 	if authType == YANDEX_AUTH_TYPE {
-		http.Redirect(response, request, yandex.CreateStageOneRef(token), http.StatusFound)
-	} else {
-		http.Redirect(response, request, github.CreateStageOneRef(token), http.StatusFound)
+		redirectURL = yandex.CreateStageOneRef(token)
 	}
+
+	http.Redirect(response, request, redirectURL, http.StatusFound)
 }
 
-func handleCallbackPath(response http.ResponseWriter, request *http.Request) {
+func handleCallbackPathAuth(response http.ResponseWriter, request *http.Request) {
 	query := request.URL.Query()
-
 	state := query.Get("state")
-	_, exists := tokens[state]
 
-	if query.Has("error") || !exists {
+	if query.Has("error") || tokens[state].ExpiresAt.IsZero() {
 		sendErrorWithStatusCode(response, request, http.StatusInternalServerError)
 		return
 	}
@@ -88,29 +112,37 @@ func handleCallbackPath(response http.ResponseWriter, request *http.Request) {
 	code := query.Get("code")
 	authType := query.Get("auth_type")
 
-	var oauthkey string
+	var oauthKey string
 	if authType == YANDEX_AUTH_TYPE {
-		oauthkey = yandex.GetAccessToken(code)
+		oauthKey = yandex.GetAccessToken(code)
 	} else {
-		oauthkey = github.GetAccessToken(code, state)
+		oauthKey = github.GetAccessToken(code, state)
 	}
 
-	http.Redirect(response, request, "http://localhost:3031/authorize?access_token="+oauthkey+"&auth_type="+authType, http.StatusFound)
+	if oauthKey == "" {
+		sendErrorWithStatusCode(response, request, http.StatusInternalServerError)
+		return
+	}
+
+	redirectURL := fmt.Sprintf("http://%s/authorize?access_token=%s&auth_type=%s&state=%s",
+		config.MAIN_DOMAIN, oauthKey, authType, state)
+	http.Redirect(response, request, redirectURL, http.StatusFound)
 }
 
-func handleAuthorize(response http.ResponseWriter, request *http.Request) {
+func handleAuthorizeAuth(response http.ResponseWriter, request *http.Request) {
 	query := request.URL.Query()
 
 	accessToken := query.Get("access_token")
 	authType := query.Get("auth_type")
+	state := query.Get("state")
 
 	if accessToken == "" || authType == "" {
-		sendErrorWithStatusCode(response, request, http.StatusBadRequest)
+		sendErrorWithStatusCode(response, request, http.StatusInternalServerError)
 		return
 	}
 
 	var jsonBody string
-	if authType == "yandex" {
+	if authType == YANDEX_AUTH_TYPE {
 		jsonBody = yandex.ChangeCodeToUserInfo(accessToken)
 	} else {
 		jsonBody = github.ChangeCodeToUserInfo(accessToken)
@@ -121,14 +153,20 @@ func handleAuthorize(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	var requiredData YandexUserDataRequired
-	if err := json.Unmarshal([]byte(jsonBody), &requiredData); err != nil {
-		sendErrorWithStatusCode(response, request, http.StatusInternalServerError)
-		return
+	var requiredData common.UserDataRequired
+	var err error
+	if authType == YANDEX_AUTH_TYPE {
+		var dr *yandex.YandexUserDataRequired
+		dr, err = yandex.DeserializeToRequiredData(jsonBody)
+		requiredData = common.UserDataRequired{Email: dr.Email}
+	} else {
+		var dr *github.GithubUserDataRequired
+		dr, err = github.DeserializeToRequiredData(jsonBody)
+		requiredData = common.UserDataRequired{Email: dr.Email}
 	}
 
-	if requiredData.Email == "" {
-		http.Redirect(response, request, "http://localhost:3030/login?error="+strconv.Itoa(http.StatusBadRequest), http.StatusFound)
+	if err != nil || requiredData.Email == "" {
+		sendErrorWithStatusCode(response, request, http.StatusInternalServerError)
 		return
 	}
 
@@ -150,39 +188,49 @@ func handleAuthorize(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	accessToken, err = jwt_token.GenerateAccessToken(permissions)
-	if err != nil {
-		sendErrorWithStatusCode(response, request, http.StatusInternalServerError)
-		return
-	}
-
+	newAccessToken, _ := jwt_token.GenerateAccessToken(permissions)
 	refreshToken, err := jwt_token.GenerateRefreshToken(user.Email)
 	if err != nil {
 		sendErrorWithStatusCode(response, request, http.StatusInternalServerError)
 		return
 	}
 
-	err = mongodb.ConstructUserModificator().ModifyTokensByEmail(mongodb.TokenDetails{
+	tokens[state] = AuthTokenData{
+		ExpiresAt:      tokens[state].ExpiresAt,
+		ResponseStatus: http.StatusOK,
+		AccessToken:    newAccessToken,
+		RefreshToken:   refreshToken,
+	}
+
+	mongodb.ConstructUserModificator().ModifyTokensByEmail(mongodb.TokenDetails{
 		RefreshToken: refreshToken,
-		AuthToken:    "",
 	}, user.Email)
+
+	session, err := request.Cookie("JSESSIONID")
 	if err != nil {
 		sendErrorWithStatusCode(response, request, http.StatusInternalServerError)
 		return
 	}
 
-	_, err = http.Post("http://localhost:3030?access_token="+accessToken+"&refresh_token="+refreshToken, "application/x-www-form-urlencoded", bytes.NewBuffer([]byte{}))
+	jsonData, err := json.Marshal(tokens[state])
 	if err != nil {
 		sendErrorWithStatusCode(response, request, http.StatusInternalServerError)
 		return
 	}
-	http.Redirect(response, request, "http://localhost:3031/login_end_stage?status=success", http.StatusFound)
-}
 
-func sendErrorWithStatusCode(response http.ResponseWriter, request *http.Request, statusCode int) {
-	http.Redirect(response, request, "http://localhost:3031/login_end_stage?status=failed&code="+strconv.Itoa(statusCode), http.StatusFound)
-}
+	req, err := http.NewRequest("POST", "http://"+config.WEB_DOMAIN+"/", bytes.NewReader(jsonData))
+	if err != nil {
+		sendErrorWithStatusCode(response, request, http.StatusInternalServerError)
+		return
+	}
+	req.Header.Add("Content-Type", "application/json")
+	req.AddCookie(session)
 
-func sendError(response http.ResponseWriter, request *http.Request) {
-	http.Redirect(response, request, "http://localhost:3031/login_end_stage?status=failed", http.StatusFound)
+	_, err = (&http.Client{}).Do(req)
+	if err != nil {
+		sendErrorWithStatusCode(response, request, http.StatusInternalServerError)
+		return
+	}
+
+	http.Redirect(response, request, "http://"+config.MAIN_DOMAIN+"/login_end_stage?status=success", http.StatusFound)
 }

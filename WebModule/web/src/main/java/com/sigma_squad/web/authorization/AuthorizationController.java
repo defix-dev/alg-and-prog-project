@@ -1,15 +1,15 @@
 package com.sigma_squad.web.authorization;
 
-import com.sigma_squad.web.services.token.TokenAdapter;
-import com.sigma_squad.web.services.token.TokenGenerator;
-import com.sigma_squad.web.services.token.TokenSaver;
+import com.sigma_squad.web.services.authorization.AuthorizationService;
+import com.sigma_squad.web.services.token.UserAuthDTO;
+import com.sigma_squad.web.services.token.redis.RedisTokenAdapter;
+import com.sigma_squad.web.services.token.redis.RedisTokenGenerator;
+import com.sigma_squad.web.services.token.redis.RedisTokenSaver;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
-import lombok.Getter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
@@ -18,36 +18,20 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicReference;
 
 @Controller
 @RequestMapping("/login")
 public class AuthorizationController {
-    private final TokenSaver saver;
-    private final TokenAdapter tokenAdapter;
-
-    @Getter
-    public enum AuthStatus {
-        AUTHORIZED("Authorized"),
-        ANONYMOUS("Anonymous");
-
-       private final String statusName;
-
-       AuthStatus(String statusName) {
-           this.statusName = statusName;
-       }
-    }
+    private final AuthorizationService authService;
 
     @Autowired
-    public AuthorizationController(TokenSaver saver, TokenAdapter tokenAdapter) {
-        this.saver = saver;
-        this.tokenAdapter = tokenAdapter;
+    public AuthorizationController(AuthorizationService authService) {
+        this.authService = authService;
     }
 
     @GetMapping
-    public String loginWithoutParams() {
-        return "login";
+    public String loginWithoutParams(HttpSession session) {
+        return !authService.isAuthorize(session.getId()) ? "login" : "redirect:/";
     }
 
     @PostMapping
@@ -58,24 +42,20 @@ public class AuthorizationController {
         }
         session = req.getSession(true);
 
-        String token = tokenAdapter.isExistTokenBody()
-                ? tokenAdapter.getTokenBody().getAuthToken()
-                : TokenGenerator.generateSecureToken();
-
-        saver.saveAuthToken(token);
-        HttpClient client = HttpClient.newBuilder().build();
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create("http://localhost:3031/login?type=" + authType + "&token="+token))
-                .POST(HttpRequest.BodyPublishers.noBody())
-                .build();
-        HttpResponse<String> response;
-        try {
-            response = client.send(request, HttpResponse.BodyHandlers.ofString());
-        } catch (IOException | InterruptedException e) {
-            throw new RuntimeException(e);
-        }
+        HttpResponse<String> response = authService.authorize(authType, session.getId());
         return ResponseEntity.status(HttpStatus.FOUND)
                 .header("Location", response.headers().firstValue("Location").orElse("http://localhost:3030/"))
                 .build();
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<Void> logout(@RequestParam(required = false) boolean all, HttpServletRequest request) throws IOException, InterruptedException {
+        authService.logout(request.getSession().getId());
+        if (all) {
+            HttpClient client = HttpClient.newBuilder().build();
+            HttpRequest req = HttpRequest.newBuilder().uri(URI.create("http://localhost:3031/logout")).POST(HttpRequest.BodyPublishers.noBody()).build();
+            client.send(req, HttpResponse.BodyHandlers.ofString());
+        }
+        return ResponseEntity.status(HttpStatus.FOUND).header("Location", "http://localhost:3030/").build();
     }
 }

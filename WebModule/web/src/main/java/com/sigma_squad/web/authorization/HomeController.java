@@ -1,22 +1,29 @@
 package com.sigma_squad.web.authorization;
 
-import com.sigma_squad.web.services.token.TokenSaver;
+import com.sigma_squad.web.services.token.abstractions.ITokenSaver;
+import com.sigma_squad.web.services.token.abstractions.JWTDTO;
+import com.sigma_squad.web.services.token.redis.RedisTokenSaver;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.*;
+
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Optional;
 
 @Controller
 @RequestMapping("/")
 public class HomeController {
-    private final TokenSaver saver;
+    private final ITokenSaver saver;
 
     @Autowired
-    public HomeController(TokenSaver saver) {
+    public HomeController(ITokenSaver saver) {
         this.saver = saver;
     }
 
@@ -26,11 +33,15 @@ public class HomeController {
     }
 
     @PostMapping
-    public ResponseEntity<Void> home(@RequestParam(value = "access_token", required = true) String accessToken,
-                                     @RequestParam(value = "refresh_token",required = true) String refreshToken) {
-        System.out.println(accessToken);
-        System.out.println(refreshToken);
-        saver.saveJWTTokens(accessToken, refreshToken);
+    @ResponseBody
+    public ResponseEntity<Void> home(@RequestBody ResponseData data, HttpServletRequest request) {
+        Optional<Cookie> sessionCook = Arrays.stream(request.getCookies()).filter(cookie -> cookie.getName().equals("JSESSIONID")).findFirst();
+        if(data.getResponseStatus() == HttpStatus.OK.value() && sessionCook.isPresent()) {
+            saver.saveJWTTokens(new JWTDTO(
+                    data.getRefreshToken(),
+                    data.getAccessToken()
+            ), sessionCook.get().getValue());
+        }
         return ResponseEntity.ok().build();
     }
 }

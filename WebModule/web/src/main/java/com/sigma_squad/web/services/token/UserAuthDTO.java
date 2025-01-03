@@ -9,7 +9,7 @@ import lombok.Setter;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-public class RedisTokenDTO {
+public class UserAuthDTO {
     private String authToken;
     private String accessToken;
     private String refreshToken;

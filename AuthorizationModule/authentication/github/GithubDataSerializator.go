@@ -19,6 +19,10 @@ type GithubResponseDTO struct {
 	TokenType   string
 }
 
+type GithubUserDataRequired struct {
+	Email string `json:"email"`
+}
+
 func SerializeToJson(dto GithubRequestDTO) []byte {
 	body, err := json.Marshal(dto)
 	if err != nil {
@@ -34,4 +38,13 @@ func DeserializeToDTO(formattedBody string) GithubResponseDTO {
 		Scope:       query.Get("scope"),
 		TokenType:   query.Get("token_type"),
 	}
+}
+
+func DeserializeToRequiredData(formattedBody string) (*GithubUserDataRequired, error) {
+	var requiredData GithubUserDataRequired
+	err := json.Unmarshal([]byte(formattedBody), &requiredData)
+	if err != nil {
+		return nil, err
+	}
+	return &requiredData, nil
 }

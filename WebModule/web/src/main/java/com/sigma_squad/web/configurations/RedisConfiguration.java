@@ -1,6 +1,6 @@
 package com.sigma_squad.web.configurations;
 
-import com.sigma_squad.web.services.token.RedisTokenDTO;
+import com.sigma_squad.web.services.token.UserAuthDTO;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -25,10 +25,10 @@ public class RedisConfiguration {
     }
 
     @Bean
-    public RedisTemplate<String, RedisTokenDTO> redisTemplate() {
-        RedisTemplate<String, RedisTokenDTO> template = new RedisTemplate<>();
+    public RedisTemplate<String, UserAuthDTO> redisTemplate() {
+        RedisTemplate<String, UserAuthDTO> template = new RedisTemplate<>();
         template.setConnectionFactory(jedisConnectionFactory());
-        template.setValueSerializer(new Jackson2JsonRedisSerializer<>(RedisTokenDTO.class));
+        template.setValueSerializer(new Jackson2JsonRedisSerializer<>(UserAuthDTO.class));
         return template;
     }
 }
