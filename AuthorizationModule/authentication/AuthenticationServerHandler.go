@@ -36,6 +36,24 @@ func StartHandle() {
 	http.HandleFunc("/authorize", handleAuthorizeAuth)
 	http.HandleFunc("/login_end_stage", handleLoginEndStagePath)
 	http.HandleFunc("/get", handleGetPath)
+	http.HandleFunc("/logout", handleLogoutPath)
+}
+
+func handleLogoutPath(response http.ResponseWriter, request *http.Request) {
+	query := request.URL.Query()
+	refreshToken := query.Get("refresh_token")
+	if refreshToken == "" {
+		sendErrorWithStatusCode(response, request, http.StatusBadRequest)
+		return
+	}
+
+	token, err := jwt_token.DecryptRefreshToken(refreshToken)
+	if err != nil {
+		sendErrorWithStatusCode(response, request, http.StatusInternalServerError)
+		return
+	}
+
+	mongodb.ConstructUserModificator().ModifyTokensByEmail(mongodb.TokenDetails{}, token.Email)
 }
 
 func handleGetPath(response http.ResponseWriter, request *http.Request) {

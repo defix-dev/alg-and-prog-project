@@ -2,6 +2,7 @@ package com.sigma_squad.web.authorization;
 
 import com.sigma_squad.web.services.authorization.AuthorizationService;
 import com.sigma_squad.web.services.token.UserAuthDTO;
+import com.sigma_squad.web.services.token.abstractions.ITokenAdapter;
 import com.sigma_squad.web.services.token.redis.RedisTokenAdapter;
 import com.sigma_squad.web.services.token.redis.RedisTokenGenerator;
 import com.sigma_squad.web.services.token.redis.RedisTokenSaver;
@@ -23,10 +24,12 @@ import java.net.http.HttpResponse;
 @RequestMapping("/login")
 public class AuthorizationController {
     private final AuthorizationService authService;
+    private final ITokenAdapter tokenAdapter;
 
     @Autowired
-    public AuthorizationController(AuthorizationService authService) {
+    public AuthorizationController(AuthorizationService authService, ITokenAdapter tokenAdapter) {
         this.authService = authService;
+        this.tokenAdapter = tokenAdapter;
     }
 
     @GetMapping
@@ -50,10 +53,11 @@ public class AuthorizationController {
 
     @PostMapping("/logout")
     public ResponseEntity<Void> logout(@RequestParam(required = false) boolean all, HttpServletRequest request) throws IOException, InterruptedException {
-        authService.logout(request.getSession().getId());
+        String sessionId = request.getSession().getId();
+        authService.logout(sessionId);
         if (all) {
             HttpClient client = HttpClient.newBuilder().build();
-            HttpRequest req = HttpRequest.newBuilder().uri(URI.create("http://localhost:3031/logout")).POST(HttpRequest.BodyPublishers.noBody()).build();
+            HttpRequest req = HttpRequest.newBuilder().uri(URI.create("http://localhost:3031/logout?refresh_token="+tokenAdapter.getTokenBody(sessionId).getRefreshToken())).POST(HttpRequest.BodyPublishers.noBody()).build();
             client.send(req, HttpResponse.BodyHandlers.ofString());
         }
         return ResponseEntity.status(HttpStatus.FOUND).header("Location", "http://localhost:3030/").build();

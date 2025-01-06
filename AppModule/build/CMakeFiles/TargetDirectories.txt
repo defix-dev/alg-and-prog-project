@@ -1,3 +1,0 @@
-C:/Users/defix/Documents/GitHub/alg-and-prog-project/AppModule/build/CMakeFiles/MyCppProject.dir
-C:/Users/defix/Documents/GitHub/alg-and-prog-project/AppModule/build/CMakeFiles/edit_cache.dir
-C:/Users/defix/Documents/GitHub/alg-and-prog-project/AppModule/build/CMakeFiles/rebuild_cache.dir
