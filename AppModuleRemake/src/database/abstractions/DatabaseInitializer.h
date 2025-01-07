@@ -4,15 +4,19 @@
 #include<memory>
 #include<iostream>
 
-template<typename DB>
-class DatabaseInitializer {
-    public:
-        bool initialized() const;
-        void initialize();
-        const std::shared_ptr<DB>& getConnection() const;
+namespace Database {
+    namespace Abstraction {
+        template<typename DB>
+        class DatabaseInitializer {
+            public:
+                bool initialized() const;
+                void initialize();
+                const std::shared_ptr<DB>& getConnection() const;
 
-    private:
-        std::shared_ptr<DB> m_db;
-};
+            private:
+                std::shared_ptr<DB> m_db;
+        };
+    }
+}
 
 #endif

@@ -7,12 +7,11 @@
 
 class Test {
     public:
-        Test(const std::list<Quest*>& quests);
+        Test(const std::list<Quest>& quests);
         int getCurrentPoints();
         int getCurrentCorrectQuests();
-        ~Test();
     private:
-        std::list<Quest*> m_quests;
+        std::list<Quest> m_quests;
 };
 
 #endif

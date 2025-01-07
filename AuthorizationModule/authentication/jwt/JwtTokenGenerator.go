@@ -13,14 +13,14 @@ const (
 func GenerateAccessToken(permissions []string) (string, error) {
 	return generateJwtToken(jwt.MapClaims{
 		"permissions": permissions,
-		"exp":         time.Now().Add(time.Minute),
+		"exp":         time.Now().Add(time.Minute).Unix(),
 	})
 }
 
 func GenerateRefreshToken(email string) (string, error) {
 	return generateJwtToken(jwt.MapClaims{
 		"email": email,
-		"exp":   time.Now().Add(time.Hour * 24 * 7),
+		"exp":   time.Now().Add(time.Hour * 24 * 7).Unix(),
 	})
 }
 

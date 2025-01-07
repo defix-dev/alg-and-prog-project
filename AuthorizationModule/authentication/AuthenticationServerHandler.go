@@ -190,9 +190,11 @@ func handleAuthorizeAuth(response http.ResponseWriter, request *http.Request) {
 
 	finder := mongodb.ConstructUserFinder()
 	user, err := finder.FindByEmail(requiredData.Email)
+	register := false
 	if err != nil {
 		mongodb.ConstructUserCreator().CreateByEmail(requiredData.Email)
 		user, _ = finder.FindByEmail(requiredData.Email)
+		register = true
 	}
 
 	if user == nil {
@@ -211,6 +213,16 @@ func handleAuthorizeAuth(response http.ResponseWriter, request *http.Request) {
 	if err != nil {
 		sendErrorWithStatusCode(response, request, http.StatusInternalServerError)
 		return
+	}
+
+	if register {
+		req, err := http.NewRequest("POST", "http://"+config.APP_DOMAIN+"/register?email="+user.Email, nil)
+		if err != nil {
+			sendErrorWithStatusCode(response, request, http.StatusInternalServerError)
+			return
+		}
+		req.Header.Add("Authorization", "Bearer "+newAccessToken)
+		(&http.Client{}).Do(req)
 	}
 
 	tokens[state] = AuthTokenData{

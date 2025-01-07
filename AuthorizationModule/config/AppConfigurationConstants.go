@@ -7,4 +7,7 @@ const (
 	WEB_HOST    = "localhost"
 	WEB_PORT    = "3030"
 	WEB_DOMAIN  = WEB_HOST + ":" + WEB_PORT
+	APP_HOST    = "localhost"
+	APP_PORT    = "3032"
+	APP_DOMAIN  = APP_HOST + ":" + APP_PORT
 )

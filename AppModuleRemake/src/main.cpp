@@ -1,33 +1,21 @@
 #include <iostream>
-#include <cpr/cpr.h>
+#include "app_server/DefaultServerInitializer.cpp"
+#include "app_server/controllers/HomeController.cpp"
+#include "app_server/controllers/UserRestController.cpp"
 #include "database/postgresql/DatabaseInitializer.cpp"
-#include "database/postgresql/DataUploader.cpp"
-#include "database/postgresql/DataRemover.cpp"
-#include "database/postgresql/DataModificator.cpp"
-#include "database/postgresql/DataAdapter.cpp"
 
 int main() {
-    DatabaseInitializer<pqxx::connection> db{};
-    db.initialize();
-    if(!db.initialized()) return 0;
+    Database::Abstraction::DatabaseInitializer<pqxx::connection> dbInitializer{};
+    dbInitializer.initialize();
 
-    const std::string table = "test";
+    if(!dbInitializer.initialized()) return 1;
 
-    DataUploader<pqxx::connection> uploader(db.getConnection(), table);
-    uploader.upload(Data({(Field("name", "defix-dev:3"))}));
-
-    DataRemover<pqxx::connection> remover(db.getConnection(), table);
-    remover.remove("1");
-
-    DataModificator<pqxx::connection> modificator(db.getConnection(), table);
-    modificator.modify("2", Data({(Field("name", "kostya(edited)"))}));
-
-    DataAdapter<pqxx::connection> adapter(db.getConnection(), table);
-
-    for(const auto& field : adapter.getDataById("2").getFields()) {
-        std::cout << field.getName() << "=" << field.getValue() << std::endl;
-    }
-
+    std::vector<std::shared_ptr<Server::Abstraction::Controller>> controllers{
+        (std::make_shared<Server::HomeController>()),
+        (std::make_shared<Server::UserRestController<pqxx::connection>>(dbInitializer.getConnection()))
+    };
+    Server::DefaultServerInitializer servInitializer{controllers};
+    servInitializer.initialize();
     return 0;
 }
 
