@@ -1,14 +1,158 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
+    <link rel="shortcut icon" href="pictures/book.png" />
     <meta charset="UTF-8">
-    <title>Login Page</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Авторизация</title>
+
+    <!-- Подключение шрифта Muli SemiBold от Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Muli:wght@600&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            background: linear-gradient(to bottom right, #4a90e2, #9b59b6);
+            font-family: 'Muli', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .login-form {
+            width: 6cm;
+            padding: 30px;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            border: 5px solid #fff;
+        }
+
+        h1 {
+            margin-top: 0;
+            color: #333;
+        }
+
+        p {
+            margin-bottom: 30px;
+            color: #666;
+        }
+
+        .icon {
+            width: 50px;
+            height: 50px;
+            cursor: pointer;
+            margin: 0 15px;
+            transition: transform 0.3s ease;
+        }
+
+        .icon:hover {
+            transform: scale(1.05);
+        }
+
+        .icons-container {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .button-container {
+            width: 40px;
+            height: 44px;
+            background-color: #9b59b6;
+            border: none;
+            cursor: pointer;
+            border-radius: 8px;
+            margin-left: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: background-color 0.3s ease, transform 0.3s ease;
+        }
+
+        .button-container:hover {
+            background-color: #8e44ad;
+            transform: scale(1.1);
+        }
+
+        .triangle {
+            width: 0;
+            height: 0;
+            border-top: 8px solid transparent;
+            border-bottom: 8px solid transparent;
+            border-left: 12px solid white;
+        }
+
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 12px 0;
+            margin-top: 10px;
+            border: none;
+            cursor: pointer;
+            width: 6cm;
+            border-radius: 4px;
+            height: 44px;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        form {
+            margin: 0;
+        }
+
+        .auth-code-btn {
+            background: none;
+            border: 2px solid #4CAF50;
+            color: #4CAF50;
+            padding: 12px 0;
+            width: 6cm;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+
+        .auth-code-btn:hover {
+            background-color: #45a049;
+            color: white;
+        }
+
+    </style>
 </head>
 <body>
-<form action="/login" method="post">
-    <button type="submit" name="type" value="yandex">Войти с помощью Yandex</button>
-    <button type="submit" name="type" value="github">Войти с помощью GitHub</button>
-    <button type="submit" name="type" value="code" disabled>Войти с помощью кода (не работает)</button>
-</form>
+<div class="login-form">
+    <h1>Авторизация</h1>
+    <p>с помощью</p>
+    <div class="icons-container">
+        <!-- Форма для Яндекса -->
+        <form action="/login" method="POST">
+            <input type="hidden" name="type" value="yandex">
+            <button type="submit" style="background: none; border: none; padding: 0; cursor: pointer;">
+                <img src="/images/Yandex_icon.png" alt="Яндекс" class="icon">
+            </button>
+        </form>
+
+        <!-- Форма для GitHub -->
+        <form action="/login" method="POST">
+            <input type="hidden" name="type" value="github">
+            <button type="submit" style="background: none; border: none; padding: 0; cursor: pointer;">
+                <img src="/images/githab.png" alt="GitHub" class="icon">
+            </button>
+        </form>
+    </div>
+
+    <p>или войдите с помощью кода</p>
+    <form action="/login" method="POST">
+        <input type="hidden" name="type" value="code">
+        <button type="submit" class="auth-code-btn">Войти с помощью кода</button>
+    </form>
+</div>
 </body>
 </html>

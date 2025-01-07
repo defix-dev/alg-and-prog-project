@@ -33,8 +33,8 @@ public class AuthorizationController {
     }
 
     @GetMapping
-    public String loginWithoutParams(HttpSession session) {
-        return !authService.isAuthorize(session.getId()) ? "login" : "redirect:/";
+    public String loginWithoutParams() {
+        return "redirect:/";
     }
 
     @PostMapping

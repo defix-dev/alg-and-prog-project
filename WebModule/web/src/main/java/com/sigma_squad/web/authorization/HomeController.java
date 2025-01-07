@@ -1,5 +1,6 @@
 package com.sigma_squad.web.authorization;
 
+import com.sigma_squad.web.services.authorization.AuthorizationService;
 import com.sigma_squad.web.services.token.abstractions.ITokenSaver;
 import com.sigma_squad.web.services.token.abstractions.JWTDTO;
 import com.sigma_squad.web.services.token.redis.RedisTokenSaver;
@@ -21,15 +22,17 @@ import java.util.Optional;
 @RequestMapping("/")
 public class HomeController {
     private final ITokenSaver saver;
+    private final AuthorizationService authService;
 
     @Autowired
-    public HomeController(ITokenSaver saver) {
+    public HomeController(ITokenSaver saver, AuthorizationService authService) {
         this.saver = saver;
+        this.authService = authService;
     }
 
     @GetMapping
-    public String home() {
-        return "home";
+    public String home(HttpSession session) {
+        return authService.isAuthorize(session.getId()) ? "home" : "login";
     }
 
     @PostMapping
