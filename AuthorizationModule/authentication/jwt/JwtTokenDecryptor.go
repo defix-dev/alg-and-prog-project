@@ -8,6 +8,7 @@ import (
 )
 
 type AccessTokenBody struct {
+	Id          int
 	Permissions []string
 	ExpiresAt   time.Time
 }
@@ -34,6 +35,9 @@ func DecryptAccessToken(token string) (*AccessTokenBody, error) {
 		}
 		if exp, ok3 := claims["exp"].(time.Time); ok3 {
 			tokenBody.ExpiresAt = exp
+		}
+		if id, ok4 := claims["id"].(int); ok4 {
+			tokenBody.Id = id
 		}
 	}
 	return &tokenBody, nil

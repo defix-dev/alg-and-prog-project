@@ -1,9 +1,7 @@
 #include "../abstractions/DataModificator.h"
-#include <pqxx/pqxx>
 
 namespace Database {
     namespace Abstraction {
-        template<>
         void DataModificator<pqxx::connection>::modify(const std::string& id, const Data& data) {
             pqxx::connection* c = m_db.get();
             pqxx::work w(*c);

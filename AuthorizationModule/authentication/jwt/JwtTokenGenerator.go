@@ -10,10 +10,11 @@ const (
 	PRIVATE_KEY = "sigma_squad_key123"
 )
 
-func GenerateAccessToken(permissions []string) (string, error) {
+func GenerateAccessToken(id int, permissions []string) (string, error) {
 	return generateJwtToken(jwt.MapClaims{
+		"id":          id,
 		"permissions": permissions,
-		"exp":         time.Now().Add(time.Minute).Unix(),
+		"exp":         time.Now().Add(time.Hour).Unix(),
 	})
 }
 

@@ -19,6 +19,16 @@ namespace Server {
                 std::shared_ptr<crow::SimpleApp> m_app;
                 std::vector<std::shared_ptr<Controller>> m_controllers;
         };
+
+        class DefaultServerInitializer : public ServerInitializer {
+            public:
+                DefaultServerInitializer(const std::vector<std::shared_ptr<Controller>>& controllers) 
+                : ServerInitializer(controllers) {}
+                void initialize() override;
+                bool initialized() const override;
+            private:
+                void initializeControllers() override;
+        };
     }
 }
 

@@ -2,6 +2,7 @@
 #define DATA_REMOVER_H
 
 #include "DatabaseUtil.h"
+#include<pqxx/pqxx>
 
 namespace Database {
     namespace Abstraction {
@@ -10,6 +11,14 @@ namespace Database {
             public:
                 DataRemover(const std::shared_ptr<DB>& db, const std::string& tableNm)
                 : DatabaseUtil<DB>(db, tableNm) {}
+                void remove(const std::string& id);
+        };
+
+        template<>
+        class DataRemover<pqxx::connection> : private DatabaseUtil<pqxx::connection> {
+            public:
+                DataRemover(const std::shared_ptr<pqxx::connection>& db, const std::string& tableNm)
+                : DatabaseUtil<pqxx::connection>(db, tableNm) {}
                 void remove(const std::string& id);
         };
     }

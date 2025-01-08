@@ -5,7 +5,6 @@
 
 namespace Database {
     namespace Abstraction {
-        template<>
         void DataUploader<pqxx::connection>::upload(const Data& data) {
             pqxx::connection* c = m_db.get();
             pqxx::work w(*c);

@@ -1,3 +1,6 @@
+#ifndef MARK_WORKPIECE_H
+#define MARK_WORKPIECE_H
+
 #include "../../../abstractions/Data.h"
 
 namespace Database {
@@ -18,3 +21,5 @@ namespace Database {
         };
     }
 }
+
+#endif

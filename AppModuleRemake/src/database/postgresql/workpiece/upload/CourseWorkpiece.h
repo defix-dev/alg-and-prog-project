@@ -1,3 +1,6 @@
+#ifndef COURSE_WORKPIECE_H
+#define COURSE_WORKPIECE_H
+
 #include "../../../abstractions/Data.h"
 
 namespace Database {
@@ -16,3 +19,5 @@ namespace Database {
         };
     }
 }
+
+#endif

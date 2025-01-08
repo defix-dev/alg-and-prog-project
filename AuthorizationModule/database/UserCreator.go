@@ -20,8 +20,13 @@ func ConstructUserCreator() *UserCreator {
 }
 
 func (creator *UserCreator) CreateByEmail(email string) error {
-	_, err := creator.collection.InsertOne(creator.context, bson.M{
-		"_email":      email,
+	userId, err := creator.collection.CountDocuments(creator.context, bson.D{})
+	if err != nil {
+		return err
+	}
+	_, err = creator.collection.InsertOne(creator.context, bson.M{
+		"userId":      userId + 1,
+		"email":       email,
 		"name":        DEFAULT_NAME,
 		"phoneNumber": DEFAULT_PHONE_NUMBER,
 		"role":        DEFAULT_ROLE,

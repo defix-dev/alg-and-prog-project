@@ -1,3 +1,6 @@
+#ifndef ANSWER_WORKPIECE_H
+#define ANSWER_WORKPIECE_H
+
 #include "../../../abstractions/Data.h"
 
 namespace Database {
@@ -18,3 +21,5 @@ namespace Database {
         };
     }
 }
+
+#endif

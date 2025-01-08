@@ -3,6 +3,7 @@
 
 #include "DatabaseUtil.h"
 #include "Data.h"
+#include<pqxx/pqxx>
 
 namespace Database {
     namespace Abstraction {
@@ -11,6 +12,14 @@ namespace Database {
             public:
                 DataUploader(const std::shared_ptr<DB>& db, const std::string& tableNm)
                 : DatabaseUtil<DB>(db, tableNm) {}
+                void upload(const Data& data);
+        };
+
+        template<>
+        class DataUploader<pqxx::connection> : private DatabaseUtil<pqxx::connection> {
+            public:
+                DataUploader(const std::shared_ptr<pqxx::connection>& db, const std::string& tableNm)
+                : DatabaseUtil<pqxx::connection>(db, tableNm) {}
                 void upload(const Data& data);
         };
     }

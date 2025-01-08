@@ -20,8 +20,16 @@ func ConstructUserFinder() *UserFinder {
 }
 
 func (finder *UserFinder) FindByEmail(email string) (*User, error) {
+	return finder.Find("email", email)
+}
+
+func (finder *UserFinder) FindById(id int) (*User, error) {
+	return finder.Find("userId", id)
+}
+
+func (finder *UserFinder) Find(key string, value any) (*User, error) {
 	var result User
-	err := finder.collection.FindOne(finder.context, bson.D{{"_email", email}}).Decode(&result)
+	err := finder.collection.FindOne(finder.context, bson.D{{key, value}}).Decode(&result)
 	if err != nil {
 		return nil, err
 	}

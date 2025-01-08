@@ -1,12 +1,7 @@
-#include "JwtValidator.cpp"
-#include "crow.h"
+#include "abstractions/JwtRequestValidator.h"
+#include "abstractions/JwtValidator.h"
 
 namespace Jwt {
-    class JwtRequestValidator {
-        public:
-            static bool isValid(const crow::request& req);
-    };
-
     bool JwtRequestValidator::isValid(const crow::request& req) {
         auto authHeader = req.get_header_value("Authorization");
 

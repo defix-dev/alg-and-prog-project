@@ -1,7 +1,8 @@
 package mongodb
 
 type User struct {
-	Email       string       `bson:"_email"`
+	UserId      int          `bson:"userId"`
+	Email       string       `bson:"email"`
 	Name        string       `bson:"name"`
 	PhoneNumber string       `bson:"phoneNumber"`
 	Role        string       `bson:"role"`

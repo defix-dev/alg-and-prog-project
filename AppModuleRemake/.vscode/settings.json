@@ -78,6 +78,9 @@
         "thread": "cpp",
         "cfenv": "cpp",
         "typeinfo": "cpp",
-        "variant": "cpp"
+        "variant": "cpp",
+        "forward_list": "cpp",
+        "valarray": "cpp",
+        "pqxx": "cpp"
     }
 }

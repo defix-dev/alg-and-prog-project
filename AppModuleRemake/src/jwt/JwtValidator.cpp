@@ -1,13 +1,8 @@
-#include <iostream>
 #include <jwt-cpp/jwt.h>
 #include "JwtConfiguration.h"
+#include "abstractions/JwtValidator.h"
 
 namespace Jwt {
-    class JwtValidator {
-        public:
-            static bool validate(const std::string& token);
-    };
-
     bool JwtValidator::validate(const std::string& token) {
         try {
         auto dtoken = jwt::decode(token);

@@ -1,8 +1,6 @@
 #include <iostream>
-#include "app_server/DefaultServerInitializer.cpp"
-#include "app_server/controllers/HomeController.cpp"
-#include "app_server/controllers/UserRestController.cpp"
-#include "database/postgresql/DatabaseInitializer.cpp"
+#include "Server.h"
+#include "Database.h"
 
 int main() {
     Database::Abstraction::DatabaseInitializer<pqxx::connection> dbInitializer{};
@@ -11,10 +9,9 @@ int main() {
     if(!dbInitializer.initialized()) return 1;
 
     std::vector<std::shared_ptr<Server::Abstraction::Controller>> controllers{
-        (std::make_shared<Server::HomeController>()),
         (std::make_shared<Server::UserRestController<pqxx::connection>>(dbInitializer.getConnection()))
     };
-    Server::DefaultServerInitializer servInitializer{controllers};
+    Server::Abstraction::DefaultServerInitializer servInitializer{controllers};
     servInitializer.initialize();
     return 0;
 }

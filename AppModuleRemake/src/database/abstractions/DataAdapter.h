@@ -11,7 +11,17 @@ namespace Database {
             public:
                 DataAdapter(const std::shared_ptr<DB>& db, const std::string& tableNm) 
                 : DatabaseUtil<DB>(db, tableNm) {}
-                Data getDataById(const std::string& id);
+                std::vector<Data> getDatasByMask(const std::string& mask, const std::string& pattern = "*");
+                std::vector<Data> getDatasById(const std::string& id, const std::string& pattern = "*");
+        };
+
+        template<>
+        class DataAdapter<pqxx::connection> : public DatabaseUtil<pqxx::connection> {
+        public:
+            DataAdapter(const std::shared_ptr<pqxx::connection>& db, const std::string& tableNm)
+            : DatabaseUtil<pqxx::connection>(db, tableNm) {}
+            std::vector<Data> getDatasByMask(const std::string& mask, const std::string& pattern = "*");
+            std::vector<Data> getDatasById(const std::string& id, const std::string& pattern = "*");
         };
     }
 }

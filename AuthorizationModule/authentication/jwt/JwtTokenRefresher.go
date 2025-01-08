@@ -28,7 +28,7 @@ func RefreshAccessToken(refreshToken string) (string, error) {
 			if err != nil {
 				return "", err
 			}
-			accessToken, err := GenerateAccessToken(permissions)
+			accessToken, err := GenerateAccessToken(user.UserId, permissions)
 			if err != nil {
 				return "", err
 			}

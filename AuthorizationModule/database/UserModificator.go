@@ -41,7 +41,37 @@ func (modificator *UserModificator) ModifyPhoneNumberByEmail(value string, email
 }
 
 func (modificator *UserModificator) modifyKeyByEmail(key string, value any, email string) error {
+	_, err := modificator.collection.UpdateOne(modificator.context, bson.M{"email": email}, bson.M{
+		"$set": bson.M{
+			key: value,
+		},
+	})
+	return err
+}
+
+func (modificator *UserModificator) ModifyTokensById(details TokenDetails, email string) error {
 	_, err := modificator.collection.UpdateOne(modificator.context, bson.M{"_email": email}, bson.M{
+		"$set": bson.M{
+			"tokens": details,
+		},
+	})
+	return err
+}
+
+func (modificator *UserModificator) ModifyNameById(value string, id int) error {
+	return modificator.modifyKeyById("name", value, id)
+}
+
+func (modificator *UserModificator) ModifyRoleById(value string, id int) error {
+	return modificator.modifyKeyById("role", value, id)
+}
+
+func (modificator *UserModificator) ModifyPhoneNumberById(value string, id int) error {
+	return modificator.modifyKeyById("phoneNumber", value, id)
+}
+
+func (modificator *UserModificator) modifyKeyById(key string, value any, id int) error {
+	_, err := modificator.collection.UpdateOne(modificator.context, bson.M{"userId": id}, bson.M{
 		"$set": bson.M{
 			key: value,
 		},

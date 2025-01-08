@@ -16,7 +16,7 @@ import (
 )
 
 type AuthTokenData struct {
-	ExpiresAt      time.Time
+	ExpiresAt      int64
 	ResponseStatus int
 	AccessToken    string
 	RefreshToken   string
@@ -35,7 +35,6 @@ func StartHandle() {
 	http.HandleFunc("/callback", handleCallbackPathAuth)
 	http.HandleFunc("/authorize", handleAuthorizeAuth)
 	http.HandleFunc("/login_end_stage", handleLoginEndStagePath)
-	http.HandleFunc("/get", handleGetPath)
 	http.HandleFunc("/logout", handleLogoutPath)
 }
 
@@ -56,25 +55,6 @@ func handleLogoutPath(response http.ResponseWriter, request *http.Request) {
 	mongodb.ConstructUserModificator().ModifyTokensByEmail(mongodb.TokenDetails{}, token.Email)
 }
 
-func handleGetPath(response http.ResponseWriter, request *http.Request) {
-	state := request.URL.Query().Get("state")
-	tokensData, exists := tokens[state]
-
-	if !exists {
-		sendErrorWithStatusCode(response, request, http.StatusInternalServerError)
-		return
-	}
-
-	jsonData, err := json.Marshal(tokensData)
-	if err != nil {
-		sendErrorWithStatusCode(response, request, http.StatusInternalServerError)
-		return
-	}
-
-	response.Header().Add("Content-Type", "application/json")
-	response.Write(jsonData)
-}
-
 func handleLoginEndStagePath(response http.ResponseWriter, request *http.Request) {
 	query := request.URL.Query()
 	status := query.Get("status")
@@ -90,13 +70,13 @@ func handleLoginEndStagePath(response http.ResponseWriter, request *http.Request
 	response.Header().Add("Cookie", "JSESSIONID="+session.Value)
 
 	if status == "success" {
-		response.Write([]byte("<h1>Успешно</h1><a href='http://localhost:3030/'>Вернуться на сайт</a>"))
+		response.Write([]byte("<meta charset='UTF-8'/><h1>Успешно</h1><a href='http://localhost:3030/'>Вернуться на сайт</a>"))
 	} else {
 		errorMsg := "Во время авторизации возникла ошибка"
 		if code != "" {
 			errorMsg += ": " + code
 		}
-		response.Write([]byte("<h1>" + errorMsg + "</h1><a href='http://localhost:3030/'>Вернуться на сайт</a>"))
+		response.Write([]byte("<meta charset='UTF-8'/><h1>" + errorMsg + "</h1><a href='http://localhost:3030/'>Вернуться на сайт</a>"))
 	}
 }
 
@@ -106,8 +86,8 @@ func handleLoginPath(response http.ResponseWriter, request *http.Request) {
 	token := query.Get("token")
 
 	tokens[token] = AuthTokenData{
-		ExpiresAt:      time.Now().Add(5 * time.Minute),
-		ResponseStatus: http.StatusNotModified,
+		ExpiresAt:      time.Now().Add(5 * time.Minute).Unix(),
+		ResponseStatus: http.StatusNotImplemented,
 	}
 
 	redirectURL := github.CreateStageOneRef(token)
@@ -122,8 +102,8 @@ func handleCallbackPathAuth(response http.ResponseWriter, request *http.Request)
 	query := request.URL.Query()
 	state := query.Get("state")
 
-	if query.Has("error") || tokens[state].ExpiresAt.IsZero() {
-		sendErrorWithStatusCode(response, request, http.StatusInternalServerError)
+	if query.Has("error") || tokens[state].ExpiresAt < time.Now().Unix() {
+		sendErrorWithStatusCode(response, request, http.StatusUnauthorized)
 		return
 	}
 
@@ -208,7 +188,7 @@ func handleAuthorizeAuth(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	newAccessToken, _ := jwt_token.GenerateAccessToken(permissions)
+	newAccessToken, _ := jwt_token.GenerateAccessToken(user.UserId, permissions)
 	refreshToken, err := jwt_token.GenerateRefreshToken(user.Email)
 	if err != nil {
 		sendErrorWithStatusCode(response, request, http.StatusInternalServerError)
@@ -216,13 +196,18 @@ func handleAuthorizeAuth(response http.ResponseWriter, request *http.Request) {
 	}
 
 	if register {
-		req, err := http.NewRequest("POST", "http://"+config.APP_DOMAIN+"/register?email="+user.Email, nil)
+		req, err := http.NewRequest("POST", "http://"+config.APP_DOMAIN+"/api/users/register?email="+user.Email, nil)
 		if err != nil {
 			sendErrorWithStatusCode(response, request, http.StatusInternalServerError)
 			return
 		}
 		req.Header.Add("Authorization", "Bearer "+newAccessToken)
 		(&http.Client{}).Do(req)
+	}
+
+	if tokens[state].ExpiresAt < time.Now().Unix() {
+		sendErrorWithStatusCode(response, request, http.StatusRequestTimeout)
+		return
 	}
 
 	tokens[state] = AuthTokenData{

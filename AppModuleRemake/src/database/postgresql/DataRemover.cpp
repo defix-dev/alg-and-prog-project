@@ -1,9 +1,7 @@
 #include "../abstractions/DataRemover.h"
-#include <pqxx/pqxx>
 
 namespace Database {
     namespace Abstraction {
-        template<>
         void DataRemover<pqxx::connection>::remove(const std::string& id) {
             pqxx::connection* c = m_db.get();
             pqxx::work w(*c);
