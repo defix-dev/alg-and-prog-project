@@ -4,6 +4,7 @@ import (
 	jwt_token "authorization-module/authentication/jwt"
 	mongodb "authorization-module/database"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
 )
@@ -33,6 +34,7 @@ func handleGetRolesPath(response http.ResponseWriter, request *http.Request) {
 
 	hasPermission := false
 	for _, s := range decryptedToken.Permissions {
+		fmt.Println(s)
 		if s == "user:roles:read" {
 			hasPermission = true
 		}
@@ -92,12 +94,13 @@ func handleSetRolesPath(response http.ResponseWriter, request *http.Request) {
 
 	hasPermission := false
 	for _, s := range decryptedToken.Permissions {
-		if s == "user:roles:set" {
+		if s == "user:roles:write" {
 			hasPermission = true
 		}
 	}
 
 	if !hasPermission {
+
 		response.WriteHeader(http.StatusForbidden)
 		return
 	}

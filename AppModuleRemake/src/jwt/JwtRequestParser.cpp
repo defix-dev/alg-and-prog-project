@@ -1,7 +1,8 @@
 #include "abstractions/JwtRequestParser.h"
+#include "abstractions/JwtAdapter.h"
 
 namespace Jwt {
-    std::string JwtRequestParser::parse(const crow::request& req) {
-        return req.get_header_value("Authorization").substr(7);
+    AccessTokenBody JwtRequestParser::parse(const crow::request& req) {
+        return JwtAdapter::getAccessTokenBody(req.get_header_value("Authorization").substr(7));
     }
 }

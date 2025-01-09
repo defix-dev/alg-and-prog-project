@@ -5,5 +5,6 @@
 #include "../src/app_server/abstractions/ServerInitializer.h"
 #include "../src/app_server/ServerConfiguration.h"
 #include "../src/app_server/controllers/abstractions/UserRestController.h"
+#include "../src/app_server/controllers/abstractions/CourseRestController.h"
 
 #endif

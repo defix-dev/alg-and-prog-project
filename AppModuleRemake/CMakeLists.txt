@@ -54,6 +54,7 @@ src/test/Quest.cpp
 src/test/Test.cpp
 src/app_server/DefaultServerInitializer.cpp
 src/app_server/controllers/UserRestController.cpp
+src/app_server/controllers/CourseRestController.cpp
 src/authentication/AccessRequestValidator.cpp
 src/database/postgresql/DataAdapter.cpp
 src/database/postgresql/DatabaseInitializer.cpp

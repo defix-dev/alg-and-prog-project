@@ -13,7 +13,8 @@
 #include "../src/database/postgresql/workpiece/upload/TestWorkpiece.h"
 #include "../src/database/postgresql/workpiece/upload/QuestWorkpiece.h"
 #include "../src/database/postgresql/workpiece/upload/AnswerWorkpiece.h"
-#include "../src/database/postgresql/workpiece/upload/MarkWorkpiece.h"
+#include "../src/database/postgresql/workpiece/upload/AttemptWorkpiece.h"
+#include "../src/database/postgresql/workpiece/upload/UserCourseWorkpiece.h"
 #include "../src/database/postgresql/workpiece/upload/CourseWorkpiece.h"
 
 #endif

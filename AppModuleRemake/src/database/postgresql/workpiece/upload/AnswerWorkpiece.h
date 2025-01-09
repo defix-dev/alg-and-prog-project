@@ -8,14 +8,16 @@ namespace Database {
         struct AnswerWorkpiece {
             public:
                 static Abstraction::Data get(
-                    const std::string& name,
                     const std::string& questId,
-                    const std::string& isCorrect
+                    const std::string& questVersion,
+                    const std::string& attemptId,
+                    const std::string& answer
                 ) {
                     return Abstraction::Data({
-                        Abstraction::Field("name", name),
-                        Abstraction::Field("quest_id", questId),
-                        Abstraction::Field("is_correct", isCorrect)
+                        Abstraction::Field("attempt_id", attemptId),
+                        Abstraction::Field("question_id", questId),
+                        Abstraction::Field("question_version", questVersion),
+                        Abstraction::Field("answer", answer)
                     });
                 }
         };

@@ -22,6 +22,11 @@ type AuthTokenData struct {
 	RefreshToken   string
 }
 
+type RegisterDTO struct {
+	Id    int    `json:"id"`
+	Email string `json:"email"`
+}
+
 var tokens = make(map[string]AuthTokenData)
 
 const (
@@ -196,13 +201,24 @@ func handleAuthorizeAuth(response http.ResponseWriter, request *http.Request) {
 	}
 
 	if register {
-		req, err := http.NewRequest("POST", "http://"+config.APP_DOMAIN+"/api/users/register?email="+user.Email, nil)
+		regJson, err := json.Marshal(RegisterDTO{Id: user.UserId, Email: user.Email})
 		if err != nil {
 			sendErrorWithStatusCode(response, request, http.StatusInternalServerError)
 			return
 		}
+		req, err := http.NewRequest("POST", "http://"+config.APP_DOMAIN+"/api/users/register", bytes.NewBuffer(regJson))
+		if err != nil {
+			mongodb.ConstructUserRemover().RemoveById(user.UserId)
+			sendErrorWithStatusCode(response, request, http.StatusInternalServerError)
+			return
+		}
 		req.Header.Add("Authorization", "Bearer "+newAccessToken)
-		(&http.Client{}).Do(req)
+		res, err := (&http.Client{}).Do(req)
+		if err != nil || res.StatusCode != 200 {
+			mongodb.ConstructUserRemover().RemoveById(user.UserId)
+			sendErrorWithStatusCode(response, request, http.StatusInternalServerError)
+			return
+		}
 	}
 
 	if tokens[state].ExpiresAt < time.Now().Unix() {

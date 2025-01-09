@@ -1,21 +1,19 @@
-#ifndef MARK_WORKPIECE_H
-#define MARK_WORKPIECE_H
+#ifndef USER_COURSE_WORKPIECE_H
+#define USER_COURSE_WORKPIECE_H
 
 #include "../../../abstractions/Data.h"
 
 namespace Database {
     namespace Postgresql {
-        struct MarkWorkpiece {
+        struct UserCourseWorkpiece {
             public:
                 static Abstraction::Data get(
-                    const std::string& mark,
                     const std::string& userId,
-                    const std::string& testId
+                    const std::string& courseId
                 ) {
                     return Abstraction::Data({
-                        Abstraction::Field("mark", mark),
                         Abstraction::Field("user_id", userId),
-                        Abstraction::Field("test_id", testId)
+                        Abstraction::Field("course_id", courseId)
                     });
                 }
         };

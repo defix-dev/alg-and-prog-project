@@ -9,11 +9,15 @@ namespace Database {
             public:
                 static Abstraction::Data get(
                     const std::string& name,
-                    const std::string& courseId
+                    const std::string& courseId,
+                    const std::string& isActive,
+                    const std::string& isDeleted
                 ) {
                     return Abstraction::Data({
                         Abstraction::Field("name", name),
-                        Abstraction::Field("course_id", courseId)
+                        Abstraction::Field("course_id", courseId),
+                        Abstraction::Field("is_active", isActive),
+                        Abstraction::Field("is_deleted", isDeleted)
                     });
                 }
         };

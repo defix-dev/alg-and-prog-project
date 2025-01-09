@@ -10,12 +10,14 @@ namespace Database {
                 static Abstraction::Data get(
                     const std::string& email,
                     const std::string& fullName,
-                    const std::string& id
+                    const std::string& id,
+                    const std::string& isBlocked
                 ) {
                     return Abstraction::Data({
                         Abstraction::Field("email", email),
                         Abstraction::Field("id", id),
-                        Abstraction::Field("full_name", fullName)
+                        Abstraction::Field("full_name", fullName),
+                        Abstraction::Field("is_blocked", isBlocked)
                     });
                 }
         };

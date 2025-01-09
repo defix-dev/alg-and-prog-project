@@ -25,7 +25,7 @@ func ConstructRoleFinder() *RoleFinder {
 
 func (finder *RoleFinder) FindRoleByName(name string) (*Role, error) {
 	var result Role
-	err := finder.collection.FindOne(finder.context, bson.D{{"_name", name}}).Decode(&result)
+	err := finder.collection.FindOne(finder.context, bson.M{"_name": name}).Decode(&result)
 	if err != nil {
 		return nil, err
 	}
@@ -34,7 +34,7 @@ func (finder *RoleFinder) FindRoleByName(name string) (*Role, error) {
 
 func (finder *RoleFinder) FindRolesByStage(stage int) (*[]Role, error) {
 	var result []Role
-	cur, err := finder.collection.Find(finder.context, bson.D{{"stage", stage}})
+	cur, err := finder.collection.Find(finder.context, bson.M{"stage": stage})
 	if err != nil {
 		return nil, err
 	}

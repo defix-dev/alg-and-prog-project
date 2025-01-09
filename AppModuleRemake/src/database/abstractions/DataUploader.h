@@ -13,6 +13,7 @@ namespace Database {
                 DataUploader(const std::shared_ptr<DB>& db, const std::string& tableNm)
                 : DatabaseUtil<DB>(db, tableNm) {}
                 void upload(const Data& data);
+                std::string uploadWithIdOutput(const Data& data);
         };
 
         template<>
@@ -21,6 +22,9 @@ namespace Database {
                 DataUploader(const std::shared_ptr<pqxx::connection>& db, const std::string& tableNm)
                 : DatabaseUtil<pqxx::connection>(db, tableNm) {}
                 void upload(const Data& data);
+                std::string uploadWithIdOutput(const Data& data);
+            private:
+                std::unique_ptr<pqxx::result> uploadWithResultOutput(const Data& data, bool returning = true);
         };
     }
 }

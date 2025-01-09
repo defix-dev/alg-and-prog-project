@@ -12,7 +12,7 @@ func RefreshAccessToken(refreshToken string) (string, error) {
 		return "", fmt.Errorf("invalid token")
 	}
 
-	parsedToken, err := jwt.Parse(refreshToken, nil)
+	parsedToken, err := jwt.Parse(refreshToken, ValidateSignMethod)
 
 	if err != nil {
 		return "", err

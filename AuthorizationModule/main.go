@@ -1,9 +1,13 @@
 package main
 
-import "authorization-module/authentication"
+import (
+	"authorization-module/authentication"
+	"authorization-module/authentication/database"
+)
 
 func main() {
 
+	database.StartHandle()
 	authentication.StartHandle()
 	authentication.StartServer()
 

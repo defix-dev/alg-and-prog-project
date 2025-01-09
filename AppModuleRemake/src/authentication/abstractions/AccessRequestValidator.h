@@ -9,11 +9,23 @@ namespace Auth {
     class AccessRequestValidator {
         public:
             static ValidateInfo validate(const crow::request& req, const std::string& permission = "");
-            static bool matchId(int id, const crow::request& req);
+            static bool matchUserId(int id, const crow::request& req);
+
+            template<typename DB>
+            static bool matchCourseIdOwner(int id, const crow::request& req, const std::shared_ptr<DB>& db);
+
+            template<typename DB>
+            static bool matchCourseIdSubscriber(int id, const crow::request& req, const std::shared_ptr<DB>& db);
 
             template<typename DB>
             static ValidateInfo validateWithBlockHandle(const crow::request& req, const std::shared_ptr<DB>& db, const std::string& permission = "");
     };
+
+    template<>
+    bool AccessRequestValidator::matchCourseIdOwner<pqxx::connection>(int id, const crow::request& req, const std::shared_ptr<pqxx::connection>& db);
+
+    template<>
+    bool AccessRequestValidator::matchCourseIdSubscriber<pqxx::connection>(int id, const crow::request& req, const std::shared_ptr<pqxx::connection>& db);
 
     template<>
     ValidateInfo AccessRequestValidator::validateWithBlockHandle<pqxx::connection>(const crow::request& req, const std::shared_ptr<pqxx::connection>& db, const std::string& permission);

@@ -29,7 +29,7 @@ func (finder *UserFinder) FindById(id int) (*User, error) {
 
 func (finder *UserFinder) Find(key string, value any) (*User, error) {
 	var result User
-	err := finder.collection.FindOne(finder.context, bson.D{{key, value}}).Decode(&result)
+	err := finder.collection.FindOne(finder.context, bson.M{key: value}).Decode(&result)
 	if err != nil {
 		return nil, err
 	}

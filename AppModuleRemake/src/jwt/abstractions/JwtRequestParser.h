@@ -2,11 +2,12 @@
 #define JWT_REQUEST_PARSER_H
 
 #include "crow.h"
+#include "AccessTokenBody.h"
 
 namespace Jwt {
     class JwtRequestParser {
         public:
-            static std::string parse(const crow::request& req);
+            static AccessTokenBody parse(const crow::request& req);
     };
 }
 

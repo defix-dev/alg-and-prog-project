@@ -19,6 +19,7 @@ namespace Database {
             public:
                 DataRemover(const std::shared_ptr<pqxx::connection>& db, const std::string& tableNm)
                 : DatabaseUtil<pqxx::connection>(db, tableNm) {}
+                void removeByMask(const std::string& mask);
                 void remove(const std::string& id);
         };
     }

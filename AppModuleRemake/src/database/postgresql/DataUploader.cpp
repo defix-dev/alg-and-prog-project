@@ -5,7 +5,7 @@
 
 namespace Database {
     namespace Abstraction {
-        void DataUploader<pqxx::connection>::upload(const Data& data) {
+        std::unique_ptr<pqxx::result> DataUploader<pqxx::connection>::uploadWithResultOutput(const Data& data, bool returning) {
             pqxx::connection* c = m_db.get();
             pqxx::work w(*c);
 
@@ -37,8 +37,22 @@ namespace Database {
 
             ssM << ssK.str() << " VALUES " << ssV.str();
 
-            w.exec(ssM.str());
+            if(returning) {
+                ssM << " RETURNING id";
+            }
+
+            pqxx::result res = w.exec(ssM.str());
             w.commit();
+
+            return std::make_unique<pqxx::result>(res);
+        }
+
+        void DataUploader<pqxx::connection>::upload(const Data& data) {
+            uploadWithResultOutput(data, false);
+        }
+
+        std::string DataUploader<pqxx::connection>::uploadWithIdOutput(const Data& data) {
+            return std::to_string((*uploadWithResultOutput(data).get())[0][0].as<int>());
         }
     }
 }

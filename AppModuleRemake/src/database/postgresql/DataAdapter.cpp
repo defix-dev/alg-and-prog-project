@@ -12,7 +12,7 @@ namespace Database {
             }
 
             std::stringstream ss;
-            ss << "SELECT " << pattern << " FROM " << m_tableNm << ssM.str();
+            ss << "SELECT " << pattern << " FROM " << m_tableNm << " " << ssM.str();
             pqxx::result res = w.exec(ss.str());
 
             std::vector<Data> datas;
