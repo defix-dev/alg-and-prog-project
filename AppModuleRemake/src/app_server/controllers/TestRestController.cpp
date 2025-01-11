@@ -120,7 +120,7 @@ namespace Server {
             }
         });
 
-        CROW_ROUTE((*app.get()), "/api/tests/get_users_list").methods(crow::HTTPMethod::Post)([this](const crow::request& req){
+        CROW_ROUTE((*app.get()), "/api/tests/get_users_list").methods(crow::HTTPMethod::GET)([this](const crow::request& req){
             const char* testId = req.url_params.get("test_id");
             if(!testId) return crow::response(crow::status::BAD_REQUEST);
             auto vinfo = Auth::AccessRequestValidator::validateWithBlockHandle<pqxx::connection>
@@ -148,7 +148,7 @@ namespace Server {
                     if(std::string id = user["user_id"]; !id.empty()) jusers.push_back(std::stoi(id));
                 }
                 return crow::response(nlohmann::json{
-                    { jusers }
+                    { "ids", jusers }
                 }.dump());
             } catch(std::exception& e) {
                 CROW_LOG_DEBUG << e.what();
@@ -156,7 +156,7 @@ namespace Server {
             }
         });
 
-        CROW_ROUTE((*app.get()), "/api/tests/get_user_marks").methods(crow::HTTPMethod::Post)([this](const crow::request& req){
+        CROW_ROUTE((*app.get()), "/api/tests/get_user_marks").methods(crow::HTTPMethod::GET)([this](const crow::request& req){
             const char* testId = req.url_params.get("test_id");
             if(!testId) return crow::response(crow::status::BAD_REQUEST);
             auto vinfo = Auth::AccessRequestValidator::validateWithBlockHandle<pqxx::connection>
@@ -203,7 +203,7 @@ namespace Server {
             }
         });
 
-        CROW_ROUTE((*app.get()), "/api/tests/get_user_answers").methods(crow::HTTPMethod::Post)([this](const crow::request& req){
+        CROW_ROUTE((*app.get()), "/api/tests/get_user_answers").methods(crow::HTTPMethod::GET)([this](const crow::request& req){
             const char* testId = req.url_params.get("test_id");
             if(!testId) return crow::response(crow::status::BAD_REQUEST);
             auto vinfo = Auth::AccessRequestValidator::validateWithBlockHandle<pqxx::connection>
@@ -267,7 +267,7 @@ namespace Server {
                     });
                 }
                 return crow::response(nlohmann::json {
-                    {jattempts}
+                    {"attempts", jattempts}
                 }.dump());
             } catch(std::exception& e) {
                 CROW_LOG_DEBUG << e.what();

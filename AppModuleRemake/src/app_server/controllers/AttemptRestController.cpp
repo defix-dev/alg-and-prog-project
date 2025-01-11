@@ -211,7 +211,7 @@ namespace Server {
                     });
                 }
                 return crow::response(nlohmann::json{
-                    { janswers }
+                    { "answers", janswers }
                 }.dump());
             } catch(std::exception& e) {
                 CROW_LOG_DEBUG << e.what();

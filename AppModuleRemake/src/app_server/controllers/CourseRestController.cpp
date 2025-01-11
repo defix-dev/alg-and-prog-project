@@ -38,7 +38,7 @@ namespace Server {
             }
             try {
                 auto courseInfo = Database::Abstraction::DataAdapter<pqxx::connection>(m_db, Database::Configuration::Postgresql::Tables::COURSES)
-                .getDatasById(std::string(id), "name, description, teacher_id");
+                .getDatasById(std::string(id), "name, description, teacher_id, is_deleted");
                 if(!(!courseInfo.empty() && !courseInfo[0].getFields().empty())) return crow::response(crow::status::NOT_FOUND);
                 return crow::response(courseInfo[0].toJson().dump());
             } catch(std::exception& e) {
