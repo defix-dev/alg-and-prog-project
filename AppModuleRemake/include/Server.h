@@ -6,5 +6,8 @@
 #include "../src/app_server/ServerConfiguration.h"
 #include "../src/app_server/controllers/abstractions/UserRestController.h"
 #include "../src/app_server/controllers/abstractions/CourseRestController.h"
+#include "../src/app_server/controllers/abstractions/QuestRestController.h"
+#include "../src/app_server/controllers/abstractions/TestRestController.h"
+#include "../src/app_server/controllers/abstractions/AttemptRestController.h"
 
 #endif

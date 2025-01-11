@@ -20,6 +20,7 @@ namespace Database {
             public:
                 DataModificator(const std::shared_ptr<pqxx::connection>& db, const std::string& tableNm)
                 : DatabaseUtil<pqxx::connection>(db, tableNm) {}
+                void modifyByMask(const std::string& mask, const Data& data);
                 void modify(const std::string& id, const Data& data);
         };
     }

@@ -18,6 +18,15 @@ namespace Auth {
             static bool matchCourseIdSubscriber(int id, const crow::request& req, const std::shared_ptr<DB>& db);
 
             template<typename DB>
+            static bool matchAttemptExist(int id, int version, const crow::request& req, const std::shared_ptr<DB>& db);
+
+            template<typename DB>
+            static bool matchQuestIdOwner(int id, int version, const crow::request& req, const std::shared_ptr<DB>& db);
+
+            template<typename DB>
+            static bool matchTestIdSubscriber(int id, const crow::request& req, const std::shared_ptr<DB>& db);
+
+            template<typename DB>
             static ValidateInfo validateWithBlockHandle(const crow::request& req, const std::shared_ptr<DB>& db, const std::string& permission = "");
     };
 
@@ -26,6 +35,15 @@ namespace Auth {
 
     template<>
     bool AccessRequestValidator::matchCourseIdSubscriber<pqxx::connection>(int id, const crow::request& req, const std::shared_ptr<pqxx::connection>& db);
+
+    template<>
+    bool AccessRequestValidator::matchAttemptExist<pqxx::connection>(int id, int version, const crow::request& req, const std::shared_ptr<pqxx::connection>& db);
+
+    template<>
+    bool AccessRequestValidator::matchQuestIdOwner<pqxx::connection>(int id, int version, const crow::request& req, const std::shared_ptr<pqxx::connection>& db);
+
+    template<>
+    bool AccessRequestValidator::matchTestIdSubscriber<pqxx::connection>(int id, const crow::request& req, const std::shared_ptr<pqxx::connection>& db);
 
     template<>
     ValidateInfo AccessRequestValidator::validateWithBlockHandle<pqxx::connection>(const crow::request& req, const std::shared_ptr<pqxx::connection>& db, const std::string& permission);

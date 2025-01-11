@@ -17,7 +17,7 @@ namespace Database {
                         Abstraction::Field("user_id", userId),
                         Abstraction::Field("test_id", testId),
                         Abstraction::Field("mark", mark),
-                        Abstraction::Field("is_completed", completed),
+                        Abstraction::Field("is_completed", completed)
                     });
                 }
         };

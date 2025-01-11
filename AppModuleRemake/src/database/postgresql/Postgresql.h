@@ -17,9 +17,10 @@ namespace Database {
                 static constexpr const char* COURSES = "courses";
                 static constexpr const char* TESTS = "tests";
                 static constexpr const char* QUESTS = "questions";
-                static constexpr const char* ANSWERS = "asnwers";
+                static constexpr const char* ANSWERS = "answers";
                 static constexpr const char* ATTEMPTS = "attempts";
                 static constexpr const char* USERS_COURSES = "users_courses";
+                static constexpr const char* QUESTS_TESTS = "quests_tests";
             };
         }
     }

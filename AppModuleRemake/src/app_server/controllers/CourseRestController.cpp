@@ -22,7 +22,8 @@ namespace Server {
                 return crow::response(nlohmann::json{
                     { "courses", clist }
                 }.dump());
-            } catch(std::exception&) {
+            } catch(std::exception& e) {
+                CROW_LOG_DEBUG << e.what();
                 return crow::response(crow::status::INTERNAL_SERVER_ERROR);
             }
         });
@@ -40,7 +41,8 @@ namespace Server {
                 .getDatasById(std::string(id), "name, description, teacher_id");
                 if(!(!courseInfo.empty() && !courseInfo[0].getFields().empty())) return crow::response(crow::status::NOT_FOUND);
                 return crow::response(courseInfo[0].toJson().dump());
-            } catch(std::exception&) {
+            } catch(std::exception& e) {
+                CROW_LOG_DEBUG << e.what();
                 return crow::response(crow::status::INTERNAL_SERVER_ERROR);
             }
         });
@@ -62,7 +64,8 @@ namespace Server {
                 Database::Abstraction::DataModificator<pqxx::connection>(m_db, Database::Configuration::Postgresql::Tables::COURSES)
                 .modify(std::to_string(id), Database::Abstraction::Data({Database::Abstraction::Field("name", name), Database::Abstraction::Field("description", description)}));
                 return crow::response(crow::status::OK);
-            } catch(std::exception&) {
+            } catch(std::exception& e) {
+                CROW_LOG_DEBUG << e.what();
                 return crow::response(crow::status::INTERNAL_SERVER_ERROR);
             }
         });
@@ -91,17 +94,22 @@ namespace Server {
                 return crow::response(nlohmann::json{
                     { "tests", jtests }
                 }.dump());
-            } catch(std::exception&) {
+            } catch(std::exception& e) {
+                CROW_LOG_DEBUG << e.what();
                 return crow::response(crow::status::INTERNAL_SERVER_ERROR);
             }
         });
 
         CROW_ROUTE((*app.get()), "/api/courses/get_test_status").methods(crow::HTTPMethod::GET)([this](const crow::request& req) {
             const char* testId = req.url_params.get("test_id");
-            const char* courseId = req.url_params.get("course_id");
-            if(!testId || !courseId) return crow::response(crow::status::BAD_REQUEST);
+            if(!testId) return crow::response(crow::status::BAD_REQUEST);
             auto vinfo = Auth::AccessRequestValidator::validateWithBlockHandle<pqxx::connection>
             (req, m_db, Server::Configuration::Permissions::Courses::GET_TEST_STATUS);
+
+            std::string courseId = Database::Abstraction::DataAdapter<pqxx::connection>(m_db, 
+            Database::Configuration::Postgresql::Tables::TESTS).getDatasById(std::string(testId),"course_id")[0]["course_id"];
+
+            if(courseId.empty()) return crow::response(crow::status::INTERNAL_SERVER_ERROR);
 
             if(!vinfo.isValid()) {
                 if(!(vinfo.getStatusCode() == crow::status::FORBIDDEN
@@ -118,51 +126,23 @@ namespace Server {
                 return crow::response(nlohmann::json{
                     { "status", data[0]["is_active"] }
                 }.dump());
-            } catch(std::exception&) {
+            } catch(std::exception& e) {
+                CROW_LOG_DEBUG << e.what();
                 return crow::response(crow::status::INTERNAL_SERVER_ERROR);
             }
         });
 
         CROW_ROUTE((*app.get()), "/api/courses/set_test_status").methods(crow::HTTPMethod::PATCH)([this](const crow::request& req) {
-            auto j = crow::json::load(req.body);
-            int testId = j["test_id"].i();
-            int courseId = j["course_id"].i();
-            bool status = j["status"].b();
-            if(testId == 0 || courseId == 0) return crow::response(crow::status::BAD_REQUEST);
+            const char* testId = req.url_params.get("id");
+            const char* status = req.url_params.get("status");
+            if(!testId || !status) return crow::response(crow::status::BAD_REQUEST);
             auto vinfo = Auth::AccessRequestValidator::validateWithBlockHandle<pqxx::connection>
             (req, m_db, Server::Configuration::Permissions::Courses::SET_TEST_STATUS);
 
-            if(!vinfo.isValid()) {
-                if(!(vinfo.getStatusCode() == crow::status::FORBIDDEN && Auth::AccessRequestValidator::matchCourseIdOwner<pqxx::connection>(courseId, req, m_db))) {
-                    return crow::response(vinfo.getStatusCode());
-                }
-            }
+            std::string courseId = Database::Abstraction::DataAdapter<pqxx::connection>(m_db, 
+            Database::Configuration::Postgresql::Tables::TESTS).getDatasById(std::string(testId),"course_id")[0]["course_id"];
 
-            try {
-                Database::Abstraction::DataModificator<pqxx::connection>(m_db, Database::Configuration::Postgresql::Tables::TESTS)
-                .modify(std::to_string(testId), Database::Abstraction::Data({Database::Abstraction::Field("is_active", std::to_string(status))}));
-                if(status) return crow::response(crow::status::OK);
-                auto attemptIds = Database::Abstraction::DataAdapter<pqxx::connection>(m_db, Database::Configuration::Postgresql::Tables::ATTEMPTS)
-                .getDatasByMask("test_id="+std::to_string(testId), "id");
-                if(attemptIds.empty()) return crow::response(crow::status::NOT_FOUND);
-                auto attMod = Database::Abstraction::DataModificator<pqxx::connection>(m_db, Database::Configuration::Postgresql::Tables::ATTEMPTS);
-                for(const auto& id : attemptIds) {
-                    attMod.modify(id["id"], Database::Abstraction::Data({Database::Abstraction::Field("is_completed", std::to_string(status))}));
-                }
-                return crow::response(crow::status::OK);
-            } catch(std::exception&) {
-                return crow::response(crow::status::INTERNAL_SERVER_ERROR);
-            }
-        });
-
-        CROW_ROUTE((*app.get()), "/api/courses/add_test").methods(crow::HTTPMethod::POST)([this](const crow::request& req) {
-            auto j = crow::json::load(req.body);
-            std::string courseId = j["course_id"].s();
-            std::string name = j["name"].s();
-            std::string description = j["description"].s();
-            if(courseId.empty() || name.empty() || description.empty()) return crow::response(crow::status::BAD_REQUEST);
-            auto vinfo = Auth::AccessRequestValidator::validateWithBlockHandle<pqxx::connection>
-            (req, m_db, Server::Configuration::Permissions::Courses::ADD_TEST);
+            if(courseId.empty()) return crow::response(crow::status::INTERNAL_SERVER_ERROR);
 
             if(!vinfo.isValid()) {
                 if(!(vinfo.getStatusCode() == crow::status::FORBIDDEN && Auth::AccessRequestValidator::matchCourseIdOwner<pqxx::connection>(std::stoi(courseId), req, m_db))) {
@@ -171,27 +151,65 @@ namespace Server {
             }
 
             try {
+                Database::Abstraction::DataModificator<pqxx::connection>(m_db, Database::Configuration::Postgresql::Tables::TESTS)
+                .modify(std::string(testId), Database::Abstraction::Data({Database::Abstraction::Field("is_active", std::string(status))}));
+                if(status) return crow::response(crow::status::OK);
+                auto attemptIds = Database::Abstraction::DataAdapter<pqxx::connection>(m_db, Database::Configuration::Postgresql::Tables::ATTEMPTS)
+                .getDatasByMask("test_id="+std::string(testId), "id");
+                if(attemptIds.empty()) return crow::response(crow::status::NOT_FOUND);
+                auto attMod = Database::Abstraction::DataModificator<pqxx::connection>(m_db, Database::Configuration::Postgresql::Tables::ATTEMPTS);
+                for(const auto& id : attemptIds) {
+                    attMod.modify(id["id"], Database::Abstraction::Data({Database::Abstraction::Field("is_completed", "true")}));
+                }
+                return crow::response(crow::status::OK);
+            } catch(std::exception& e) {
+                CROW_LOG_DEBUG << e.what();
+                return crow::response(crow::status::INTERNAL_SERVER_ERROR);
+            }
+        });
+
+        CROW_ROUTE((*app.get()), "/api/courses/add_test").methods(crow::HTTPMethod::POST)([this](const crow::request& req) {
+            auto j = crow::json::load(req.body);
+            int courseId = j["course_id"].i();
+            std::string name = j["name"].s();
+            std::string description = j["description"].s();
+            if(courseId == 0 || name.empty() || description.empty()) return crow::response(crow::status::BAD_REQUEST);
+            auto vinfo = Auth::AccessRequestValidator::validateWithBlockHandle<pqxx::connection>
+            (req, m_db, Server::Configuration::Permissions::Courses::ADD_TEST);
+
+            if(!vinfo.isValid()) {
+                if(!(vinfo.getStatusCode() == crow::status::FORBIDDEN && Auth::AccessRequestValidator::matchCourseIdOwner<pqxx::connection>(courseId, req, m_db))) {
+                    return crow::response(vinfo.getStatusCode());
+                }
+            }
+
+            try {
                 std::string id = Database::Abstraction::DataUploader<pqxx::connection>(m_db, 
                 Database::Configuration::Postgresql::Tables::TESTS).uploadWithIdOutput(Database::Postgresql::TestWorkpiece
-                ::get(name, courseId, "", ""));
+                ::get(name, description, std::to_string(courseId), "", ""));
                 if(id.empty()) return crow::response(crow::status::INTERNAL_SERVER_ERROR);
                 return crow::response(nlohmann::json{
                     { "test_id", id }
                 }.dump());
-            } catch(std::exception&) {
+            } catch(std::exception& e) {
+                CROW_LOG_DEBUG << e.what();
                 return crow::response(crow::status::INTERNAL_SERVER_ERROR);
             }
         });
 
         CROW_ROUTE((*app.get()), "/api/courses/delete_test").methods(crow::HTTPMethod::PATCH)([this](const crow::request& req) {
             const char* testId = req.url_params.get("test_id");
-            const char* courseId = req.url_params.get("course_id");
-            if(!testId || !courseId) return crow::response(crow::status::BAD_REQUEST);
+            if(!testId) return crow::response(crow::status::BAD_REQUEST);
             auto vinfo = Auth::AccessRequestValidator::validateWithBlockHandle<pqxx::connection>
             (req, m_db, Server::Configuration::Permissions::Courses::DELETE_TEST);
 
+            std::string courseId = Database::Abstraction::DataAdapter<pqxx::connection>(m_db, 
+            Database::Configuration::Postgresql::Tables::TESTS).getDatasById(std::string(testId),"course_id")[0]["course_id"];
+
+            if(courseId.empty()) return crow::response(crow::status::INTERNAL_SERVER_ERROR);
+
             if(!vinfo.isValid()) {
-                if(!(vinfo.getStatusCode() == crow::status::FORBIDDEN && Auth::AccessRequestValidator::matchCourseIdOwner<pqxx::connection>(std::stoi(std::string(courseId)), req, m_db))) {
+                if(!(vinfo.getStatusCode() == crow::status::FORBIDDEN && Auth::AccessRequestValidator::matchCourseIdOwner<pqxx::connection>(std::stoi(courseId), req, m_db))) {
                     return crow::response(vinfo.getStatusCode());
                 }
             }
@@ -201,12 +219,13 @@ namespace Server {
                 Database::Configuration::Postgresql::Tables::TESTS).modify(std::string(testId), Database::Abstraction
                 ::Data({Database::Abstraction::Field("is_deleted", "true")}));
                 return crow::response(crow::status::OK);
-            } catch(std::exception&) {
+            } catch(std::exception& e) {
+                CROW_LOG_DEBUG << e.what();
                 return crow::response(crow::status::INTERNAL_SERVER_ERROR);
             }
         });
 
-        CROW_ROUTE((*app.get()), "/api/courses/get_users_list").methods(crow::HTTPMethod::PATCH)([this](const crow::request& req) {
+        CROW_ROUTE((*app.get()), "/api/courses/get_users_list").methods(crow::HTTPMethod::GET)([this](const crow::request& req) {
             const char* id = req.url_params.get("course_id");
             if(!id) return crow::response(crow::status::BAD_REQUEST);
             auto vinfo = Auth::AccessRequestValidator::validateWithBlockHandle<pqxx::connection>
@@ -234,7 +253,8 @@ namespace Server {
                 return crow::response(nlohmann::json{
                     { "users", jusers }
                 }.dump());
-            } catch(std::exception&) {
+            } catch(std::exception& e) { 
+                CROW_LOG_DEBUG << e.what();
                 return crow::response(crow::status::INTERNAL_SERVER_ERROR);
             }
         });
@@ -258,12 +278,13 @@ namespace Server {
                     Database::Postgresql::UserCourseWorkpiece::get(std::string(userId), std::string(courseId))
                  );
                  return crow::response(crow::status::OK);
-            } catch(std::exception&) {
+            } catch(std::exception& e) { 
+                CROW_LOG_DEBUG << e.what();
                 return crow::response(crow::status::INTERNAL_SERVER_ERROR);
             }
         });
 
-        CROW_ROUTE((*app.get()), "/api/courses/delete_user").methods(crow::HTTPMethod::Patch)([this](const crow::request& req) {
+        CROW_ROUTE((*app.get()), "/api/courses/delete_user").methods(crow::HTTPMethod::Delete)([this](const crow::request& req) {
             const char* courseId = req.url_params.get("course_id");
             const char* userId = req.url_params.get("user_id");
             if(!courseId || !userId) return crow::response(crow::status::BAD_REQUEST);
@@ -281,7 +302,8 @@ namespace Server {
                  Database::Configuration::Postgresql::Tables::USERS_COURSES)
                  .removeByMask("user_id="+std::string(userId)+" AND "+"course_id="+std::string(courseId));
                  return crow::response(crow::status::OK);
-            } catch(std::exception&) {
+            } catch(std::exception& e) {
+                CROW_LOG_DEBUG << e.what();
                 return crow::response(crow::status::INTERNAL_SERVER_ERROR);
             }
         });
@@ -306,7 +328,8 @@ namespace Server {
                     name, description, std::to_string(teacherId), ""
                 ));
                 return crow::response(crow::status::OK);
-            } catch(std::exception&) {
+            } catch(std::exception& e) {
+                CROW_LOG_DEBUG << e.what();
                 return crow::response(crow::status::INTERNAL_SERVER_ERROR);
             }
         });
@@ -330,7 +353,8 @@ namespace Server {
                     Database::Abstraction::Field("is_deleted", "true")
                 }));
                 return crow::response(crow::status::OK);
-            } catch(std::exception&) {
+            } catch(std::exception& e) {
+                CROW_LOG_DEBUG << e.what();
                 return crow::response(crow::status::INTERNAL_SERVER_ERROR);
             }
         });

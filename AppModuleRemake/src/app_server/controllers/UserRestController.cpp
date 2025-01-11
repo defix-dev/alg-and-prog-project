@@ -71,7 +71,8 @@ namespace Server {
                     j.push_back(data.toJson());
                 }
                 return crow::response(nlohmann::json{{"users", j}}.dump());
-            } catch(std::exception&) {
+            } catch(std::exception& e) {
+                CROW_LOG_DEBUG << e.what();
                 return crow::response(crow::status::INTERNAL_SERVER_ERROR);
             }
         });
@@ -137,7 +138,8 @@ namespace Server {
                 else {
                     return crow::response(crow::status::BAD_REQUEST);
                 }
-            } catch(std::exception&) {
+            } catch(std::exception& e) {
+                CROW_LOG_DEBUG << e.what();
                 return crow::response(crow::status::INTERNAL_SERVER_ERROR);
             }
         });
@@ -157,9 +159,10 @@ namespace Server {
             }
             try {
                 Database::Abstraction::DataModificator<pqxx::connection>(m_db, Database::Configuration::Postgresql::Tables::USERS)
-                .modify(std::string(id), Database::Abstraction::Data({Database::Abstraction::Field("full_name", name)}));
+                .modify(std::string(id), Database::Abstraction::Data({Database::Abstraction::Field("full_name", std::string(name))}));
                 return crow::response(crow::status::OK);
-            } catch(std::exception&) {
+            } catch(std::exception& e) {
+                CROW_LOG_DEBUG << e.what();
                 return crow::response(crow::status::INTERNAL_SERVER_ERROR);
             }
         });
@@ -185,7 +188,8 @@ namespace Server {
                 std::string role = j["role"];
                 if(role.empty()) return crow::response(crow::status::INTERNAL_SERVER_ERROR);
                 return crow::response(res.text);
-            } catch(std::exception&) {
+            } catch(std::exception& e) {
+                CROW_LOG_DEBUG << e.what();
                 return crow::response(crow::status::INTERNAL_SERVER_ERROR);
             }
         });
@@ -228,7 +232,8 @@ namespace Server {
                 return crow::response(nlohmann::json{
                     { "is_blocked", blocked }
                 }.dump());
-            } catch(std::exception&) {
+            } catch(std::exception& e) {
+                CROW_LOG_DEBUG << e.what();
                 return crow::response(crow::status::INTERNAL_SERVER_ERROR);
             }
         });
@@ -249,7 +254,8 @@ namespace Server {
                 Database::Abstraction::DataModificator<pqxx::connection>(m_db, Database::Configuration::Postgresql::Tables::USERS)
                 .modify(std::string(id), Database::Abstraction::Data({Database::Abstraction::Field("is_blocked", std::string(block))}));
                 return crow::response(crow::status::OK);
-            } catch(std::exception&) {
+            } catch(std::exception& e) {
+                CROW_LOG_DEBUG << e.what();
                 return crow::response(crow::status::INTERNAL_SERVER_ERROR);
             }
         });

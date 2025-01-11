@@ -26,7 +26,7 @@ namespace Database {
                 }
                 first = false;
 
-                v = !std::all_of(v.begin(), v.end(), ::isdigit) ? "'" + v + "'" : v;
+                v = (!std::all_of(v.begin(), v.end(), ::isdigit) && v.find("ARRAY[") == std::string::npos) ? "'" + v + "'" : v;
 
                 ssK << field.getName();
                 ssV << v;

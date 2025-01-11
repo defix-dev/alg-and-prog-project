@@ -13,7 +13,8 @@ namespace Database {
                     const std::string& authorId,
                     const std::string& answers,
                     const std::string& correctAsnwer,
-                    const std::string& version
+                    const std::string& version,
+                    const std::string& isDeleted
                 ) {
                     return Abstraction::Data({
                         Abstraction::Field("name", name),
@@ -21,7 +22,8 @@ namespace Database {
                         Abstraction::Field("author_id", authorId),
                         Abstraction::Field("answers", answers),
                         Abstraction::Field("correct_answer", correctAsnwer),
-                        Abstraction::Field("version", version)
+                        Abstraction::Field("version", version),
+                        Abstraction::Field("is_deleted", isDeleted)
                     });
                 }
         };

@@ -55,6 +55,9 @@ src/test/Test.cpp
 src/app_server/DefaultServerInitializer.cpp
 src/app_server/controllers/UserRestController.cpp
 src/app_server/controllers/CourseRestController.cpp
+src/app_server/controllers/QuestRestController.cpp
+src/app_server/controllers/TestRestController.cpp
+src/app_server/controllers/AttemptRestController.cpp
 src/authentication/AccessRequestValidator.cpp
 src/database/postgresql/DataAdapter.cpp
 src/database/postgresql/DatabaseInitializer.cpp

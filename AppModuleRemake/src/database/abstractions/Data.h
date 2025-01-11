@@ -12,6 +12,8 @@ namespace Database {
         public:
             Field(const std::string& name, const std::string& value) :
             m_name(name), m_value(value) {}
+            Field(const char* name, const char* value) :
+            m_name(std::string(name)), m_value(std::string(value)) {}
             const std::string& getName() const { return m_name; }
             const std::string& getValue() const { return m_value; }
         private:

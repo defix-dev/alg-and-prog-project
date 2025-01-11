@@ -70,4 +70,53 @@ namespace Auth {
             return false;
         }
     }
+
+    template<>
+    bool AccessRequestValidator::matchAttemptExist<pqxx::connection>(int id, int version, const crow::request& req, const std::shared_ptr<pqxx::connection>& db) {
+        try {
+            auto attemptIds = Database::Abstraction::DataAdapter<pqxx::connection>(db, Database::Configuration::Postgresql::Tables::ANSWERS)
+            .getDatasByMask("question_id="+std::to_string(id)+" AND question_version="+std::to_string(version), "attempt_id");
+            int userId = Jwt::JwtRequestParser::parse(req).getId();
+            Database::Abstraction::DataAdapter<pqxx::connection> attemptAd(db, Database::Configuration::Postgresql::Tables::ATTEMPTS);
+            std::string testId;
+            for(const auto& attemptId : attemptIds) {
+                if(std::string aid = attemptId["attemptId"]; !aid.empty())
+                    if(auto attempt = attemptAd.getDatasByMask("id="+aid+" AND user_id="+std::to_string(userId), "test_id"); !attempt.empty())
+                        if(std::string ctid = attempt[0]["test_id"]; !ctid.empty()) { testId = ctid; break; }
+            }
+            auto data = Database::Abstraction::DataAdapter<pqxx::connection>(db, Database::Configuration::Postgresql::Tables::QUESTS_TESTS)
+            .getDatasByMask("test_id="+testId+" AND quest_id="+std::to_string(id));
+            return !data.empty();
+        } catch(std::exception&) {
+            return false;
+        }
+    }
+
+    template<>
+    bool AccessRequestValidator::matchQuestIdOwner<pqxx::connection>(int id, int version, const crow::request& req, const std::shared_ptr<pqxx::connection>& db) {
+        try {
+            if(version == 0) version = 1;
+            auto data = Database::Abstraction::DataAdapter<pqxx::connection>(db, Database::Configuration::Postgresql::Tables::QUESTS)
+            .getDatasByMask("id="+std::to_string(id)+" AND version="+std::to_string(version), "author_id");
+            std::string authorId;
+            if(authorId = data[0]["author_id"]; !(!data.empty() && !authorId.empty())) return false;
+            return authorId == std::to_string(Jwt::JwtRequestParser::parse(req).getId());
+        } catch(std::exception&) {
+            return true;
+        }
+    }
+
+    template<>
+    bool AccessRequestValidator::matchTestIdSubscriber<pqxx::connection>(int id, const crow::request& req, const std::shared_ptr<pqxx::connection>& db) {
+        try {
+            auto data = Database::Abstraction::DataAdapter<pqxx::connection>(db, Database::Configuration::Postgresql::Tables::TESTS)
+            .getDatasById(std::to_string(id), "course_id");
+            if(data.empty()) return false;
+            std::string cid = data[0]["course_id"];
+            if(cid.empty()) return false;
+            return matchCourseIdSubscriber(std::stoi(cid), req, db);
+        } catch(std::exception&) {
+            return false;
+        }
+    }
 }
