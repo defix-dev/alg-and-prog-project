@@ -273,6 +273,10 @@ namespace Server {
             }
 
             try {
+                auto data = Database::Abstraction::DataAdapter<pqxx::connection>(m_db,
+                Database::Configuration::Postgresql::Tables::COURSES).getDatasById(std::string(courseId), "is_deleted");
+                if(data.empty()) return crow::response(crow::status::NOT_FOUND);
+                if(std::string del = data[0]["is_deleted"]; !(!del.empty() && del == "f")) return crow::response(crow::status::FORBIDDEN);
                 Database::Abstraction::DataUploader<pqxx::connection>(m_db,
                  Database::Configuration::Postgresql::Tables::USERS_COURSES).upload(
                     Database::Postgresql::UserCourseWorkpiece::get(std::string(userId), std::string(courseId))

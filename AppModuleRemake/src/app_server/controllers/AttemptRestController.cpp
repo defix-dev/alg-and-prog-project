@@ -201,11 +201,13 @@ namespace Server {
                     std::string av = answer["answer"];
                     std::string qid = answer["question_id"];
                     std::string qv = answer["question_version"];
-                    auto qdata = questAd.getDatasByMask("id="+qid+" AND version="+qv, "answers["+av+"] as answerv, name");
-                    std::string an = qdata[0]["answerv"];
+                    auto qdata = questAd.getDatasByMask("id="+qid+" AND version="+qv, "answers["+av+"] as answerv, name, id");
+                    std::string an = av != "-1" ? qdata[0]["answerv"] : "ответ еще не дан";
                     std::string qn = qdata[0]["name"];
                     if(an.empty() || qn.empty()) continue;
                     janswers.push_back(nlohmann::json{
+                        { "quest_id", qid },
+                        { "quest_version", qv },
                         { "quest_name", qn },
                         { "answer", an }
                     });

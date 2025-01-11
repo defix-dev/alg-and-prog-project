@@ -65,14 +65,7 @@ func handleLoginEndStagePath(response http.ResponseWriter, request *http.Request
 	status := query.Get("status")
 	code := query.Get("code")
 
-	session, err := request.Cookie("JSESSIONID")
-	if err != nil {
-		sendErrorWithStatusCode(response, request, http.StatusInternalServerError)
-		return
-	}
-
 	response.Header().Add("Content-Type", "text/html")
-	response.Header().Add("Cookie", "JSESSIONID="+session.Value)
 
 	if status == "success" {
 		response.Write([]byte("<meta charset='UTF-8'/><h1>Успешно</h1><a href='http://localhost:3030/'>Вернуться на сайт</a>"))
@@ -89,6 +82,16 @@ func handleLoginPath(response http.ResponseWriter, request *http.Request) {
 	query := request.URL.Query()
 	authType := query.Get("type")
 	token := query.Get("token")
+
+	session, err := request.Cookie("JSESSIONID")
+	if err != nil {
+		sendErrorWithStatusCode(response, request, http.StatusBadRequest)
+		return
+	}
+
+	fmt.Println(session.Value)
+
+	http.SetCookie(response, session)
 
 	tokens[token] = AuthTokenData{
 		ExpiresAt:      time.Now().Add(5 * time.Minute).Unix(),
