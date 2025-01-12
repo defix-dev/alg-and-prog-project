@@ -61,9 +61,13 @@ namespace Auth {
     template<>
     bool AccessRequestValidator::matchCourseIdOwner<pqxx::connection>(int id, const crow::request& req, const std::shared_ptr<pqxx::connection>& db) {
         try {
+            CROW_LOG_DEBUG << "Start course matching...";
             int userId = Jwt::JwtRequestParser::parse(req).getId();
+            CROW_LOG_DEBUG << "Checking course db...";
             auto data = Database::Abstraction::DataAdapter<pqxx::connection>(db, Database::Configuration::Postgresql::Tables::COURSES)
             .getDatasById(std::to_string(id), "teacher_id");
+            CROW_LOG_DEBUG << "Checking data from courses...";
+            if(data.empty()) return false;
             if(!(!data.empty() && !data[0]["teacher_id"].empty())) return false;
             return true;
         } catch (std::exception&) {
@@ -96,10 +100,14 @@ namespace Auth {
     bool AccessRequestValidator::matchQuestIdOwner<pqxx::connection>(int id, int version, const crow::request& req, const std::shared_ptr<pqxx::connection>& db) {
         try {
             if(version == 0) version = 1;
+            CROW_LOG_DEBUG << "Start quest checker...";
             auto data = Database::Abstraction::DataAdapter<pqxx::connection>(db, Database::Configuration::Postgresql::Tables::QUESTS)
             .getDatasByMask("id="+std::to_string(id)+" AND version="+std::to_string(version), "author_id");
             std::string authorId;
+            CROW_LOG_DEBUG << "Getting author_id...";
+            if(data.empty()) return false;
             if(authorId = data[0]["author_id"]; !(!data.empty() && !authorId.empty())) return false;
+            CROW_LOG_DEBUG << "Checking more...";
             return authorId == std::to_string(Jwt::JwtRequestParser::parse(req).getId());
         } catch(std::exception&) {
             return true;

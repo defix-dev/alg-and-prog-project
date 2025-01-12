@@ -41,10 +41,12 @@ namespace Server {
         });
 
         CROW_ROUTE((*app.get()), "/api/tests/add_quest").methods(crow::HTTPMethod::Post)([this](const crow::request& req){
+                  try {
             auto j = crow::json::load(req.body);
             int questId = j["quest_id"].i();
             int testId = j["test_id"].i();
             int questVersion = j["quest_version"].i();
+            CROW_LOG_DEBUG << "q" << questId << "t" << testId << "qv" << questVersion;
             if(questId == 0 || testId == 0 || questVersion == 0) return crow::response(crow::status::BAD_REQUEST);
             auto vinfo = Auth::AccessRequestValidator::validateWithBlockHandle<pqxx::connection>
             (req, m_db, Server::Configuration::Permissions::Tests::ADD_QUEST);
@@ -52,17 +54,18 @@ namespace Server {
             std::string courseId = Database::Abstraction::DataAdapter<pqxx::connection>(m_db, 
             Database::Configuration::Postgresql::Tables::TESTS).getDatasById(std::to_string(testId),"course_id")[0]["course_id"];
 
+            CROW_LOG_DEBUG << "cid" << courseId;
+
             if(courseId.empty()) return crow::response(crow::status::INTERNAL_SERVER_ERROR);
 
             if(!vinfo.isValid()) {
                 if(!(vinfo.getStatusCode() == crow::status::FORBIDDEN && (
-                Auth::AccessRequestValidator::matchCourseIdOwner(std::stoi(courseId), req, m_db) &&
-                Auth::AccessRequestValidator::matchQuestIdOwner(std::stoi(courseId), 0, req, m_db)))) {
+                Auth::AccessRequestValidator::matchCourseIdOwner<pqxx::connection>(std::stoi(courseId), req, m_db) &&
+                Auth::AccessRequestValidator::matchQuestIdOwner<pqxx::connection>(questId, questVersion, req, m_db)))) {
                     return crow::response(vinfo.getStatusCode());
                 }
             }
 
-            try {
                 auto data = Database::Abstraction::DataAdapter<pqxx::connection>(m_db,
                 Database::Configuration::Postgresql::Tables::ATTEMPTS)
                 .getDatasByMask("test_id="+std::to_string(testId), "id");
